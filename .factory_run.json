@@ -1,15 +1,15 @@
 {
-  "run_id": "run-20260914-054815-abfa16",
+  "run_id": "run-20260914-154308-c7476b",
   "project": "algolab",
   "workspace_path": "/home/ubuntu/algolab",
-  "worktree_path": "/home/ubuntu/algolab-sandbox/runs/run-20260914-054815-abfa16",
-  "worktree_branch": "factory/run-20260914-054815-abfa16",
+  "worktree_path": "/home/ubuntu/algolab-sandbox/runs/run-20260914-154308-c7476b",
+  "worktree_branch": "factory/run-20260914-154308-c7476b",
   "baseline_git": {
     "repository": "https://github.com/vijaykumarjogi266-star/algopro",
     "branch": "main",
-    "head_commit": "ad30f9ab6291130de57ac55768fda6b1ebf2dfa6",
+    "head_commit": "06c69cfc1f3a253e1ae77cf09e2c1aae0fac7c32",
     "is_clean": true,
     "uncommitted_changes": []
   },
-  "created_at": "2026-09-14T05:48:15.558617+00:00"
+  "created_at": "2026-09-14T15:43:08.535879+00:00"
 }
