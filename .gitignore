@@ -69,3 +69,9 @@ data/features/*
 # Logs
 logs/
 *.log
+
+# Credentials & Evidence
+*.enc
+.master_key
+evidence/
+
