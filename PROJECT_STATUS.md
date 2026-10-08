@@ -25,3 +25,8 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Trading remains READ_ONLY.
 - Order submission remains disabled.
 Commit: c6c48782bfd39ba053bc94c2132bc9b79ca2b8d4
+
+## Decision Engine
+- Intraday Market Regime and Strategy policy engine implemented.
+- Fully separated boundary from execution/OMS logic.
+- Safe by default; issues HALT and NO_TRADE upon uncertainty.

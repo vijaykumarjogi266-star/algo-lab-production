@@ -1,3 +1,9 @@
+
+## [Unreleased]
+### Added
+- GAP-03: Hardened handling for order submission and cancellation timeouts (T05 and T10), preserving capital reservation, risk exposure, and implementing durable broker uncertainty records.
+Implemented Intraday Decision Engine with strict safety boundaries and market regime classifications.
+
 Regression repair after T15 concurrent reservation integration (Commit: c6c48782bfd39ba053bc94c2132bc9b79ca2b8d4)
 
 # Changelog
