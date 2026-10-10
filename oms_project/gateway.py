@@ -42,6 +42,9 @@ class BrokerGateway:
         from oms_project.accounting import AccountingService
         self.accounting = AccountingService(self.db.conn)
         self.accounting.initialize_account("PAPER_DEFAULT")
+        
+        from oms_project.reconciliation import ReconciliationService
+        self.reconciliation = ReconciliationService(self.db.conn)
         self.vault = VaultSecretsManager()
         self.paper_exchange = paper_exchange or PaperExchange(initial_cash=100000.0)
         self.max_gross_exposure = max_gross_exposure
@@ -463,6 +466,20 @@ class BrokerGateway:
 
     # Primary Order Execution Pipeline
     def process_order_intent(self, intent: OrderIntent, simulate_network_failure: bool = False) -> OrderResult:
+        if not self.reconciliation.can_accept_new_entries("PAPER_DEFAULT"):
+            return OrderResult(
+                order_id="",
+                request_id=intent.request_id,
+                strategy_id=intent.strategy_id,
+                symbol=intent.symbol,
+                side=intent.side.value,
+                qty=intent.qty,
+                price=intent.price,
+                status=OrderState.REJECTED,
+                message="RECONCILIATION_HOLD_NEW_ENTRIES_BLOCKED",
+                reserved_value=0.0
+            )
+
         # Step 1: Idempotency Check (before any DB write or risk reservation)
         cached_result = self.check_idempotency(intent.request_id)
         if cached_result:

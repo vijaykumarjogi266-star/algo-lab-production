@@ -179,6 +179,45 @@ CREATE TABLE IF NOT EXISTS position_lots (
     closed_at REAL,
     metadata_json TEXT
 );
+CREATE TABLE IF NOT EXISTS reconciliation_runs (
+    reconciliation_run_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    started_at REAL NOT NULL,
+    completed_at REAL,
+    status TEXT NOT NULL,
+    snapshot_reference TEXT,
+    internal_ledger_version TEXT,
+    broker_cash TEXT,
+    internal_cash TEXT,
+    broker_equity TEXT,
+    internal_equity TEXT,
+    correlation_id TEXT,
+    metadata_json TEXT
+);
+
+CREATE TABLE IF NOT EXISTS reconciliation_breaks (
+    break_id TEXT PRIMARY KEY,
+    reconciliation_run_id TEXT NOT NULL,
+    account_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    break_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    symbol TEXT,
+    external_reference TEXT,
+    internal_reference TEXT,
+    expected_value TEXT,
+    observed_value TEXT,
+    currency TEXT,
+    status TEXT NOT NULL,
+    detected_at REAL NOT NULL,
+    resolved_at REAL,
+    evidence_reference TEXT,
+    operator_rationale TEXT,
+    correlation_id TEXT,
+    metadata_json TEXT,
+    FOREIGN KEY(reconciliation_run_id) REFERENCES reconciliation_runs(reconciliation_run_id)
+);
 """
 
 # Valid state machine transitions

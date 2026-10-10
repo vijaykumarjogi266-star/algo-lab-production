@@ -8,5 +8,5 @@
   - Shutdown focused test file: `oms_project/tests/test_shutdown_recovery.py`
   - Full suite result: `90 passed, 2 warnings`
   - T15 repeated stress run: passed 20 times
-- GAP-07 / T28/T30 reconciliation: OPEN
+- GAP-07 / T28/T30 reconciliation: RESOLVED
 - GAP-08 / Accounting/P&L or fee-model gaps: RESOLVED
