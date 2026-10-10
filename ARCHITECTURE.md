@@ -6,3 +6,4 @@ Do not create another Algo Lab root.
 Do not overwrite an entire file without reading it.
 Do not merge modules from another repository without a documented comparison, test plan, Git branch, and rollback plan.
 Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_REGISTER.md, and test evidence.
+- Shutdown Recovery: Ensures graceful pause, reduce-only blocks, and persistence via shutdown_sessions

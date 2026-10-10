@@ -92,6 +92,31 @@ CREATE TABLE IF NOT EXISTS broker_uncertainty_records (
     metadata_json TEXT,
     UNIQUE(order_id, uncertainty_type)
 );
+
+CREATE TABLE IF NOT EXISTS shutdown_sessions (
+    shutdown_session_id TEXT PRIMARY KEY,
+    requested_at REAL NOT NULL,
+    initiated_by TEXT,
+    status TEXT NOT NULL,
+    reason TEXT,
+    started_at REAL NOT NULL,
+    completed_at REAL,
+    recovery_required INTEGER DEFAULT 1,
+    recovery_completed_at REAL,
+    metadata_json TEXT
+);
+
+CREATE TABLE IF NOT EXISTS shutdown_events (
+    shutdown_event_id TEXT PRIMARY KEY,
+    shutdown_session_id TEXT NOT NULL,
+    order_id TEXT,
+    execution_id TEXT,
+    event_type TEXT NOT NULL,
+    correlation_id TEXT,
+    occurred_at REAL NOT NULL,
+    metadata_json TEXT,
+    FOREIGN KEY(shutdown_session_id) REFERENCES shutdown_sessions(shutdown_session_id)
+);
 """
 
 # Valid state machine transitions

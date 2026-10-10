@@ -9,7 +9,7 @@ import hmac
 import hashlib
 import sqlite3
 from typing import Dict, Any, Optional, List, Callable
-from oms_project.schemas import OrderIntent, OrderResult, OrderState, OrderSide
+from oms_project.schemas import OrderIntent, OrderResult, OrderState, OrderSide, ShutdownState
 from oms_project.database import OrderLedgerDB
 from oms_project.paper_exchange import PaperExchange
 from oms_project.reservation_service import CapitalReservationService, ReservationOutcome
@@ -80,6 +80,8 @@ class BrokerGateway:
         # Control plane guards
         self.kill_switch_active: bool = False
         self.db_reachable: bool = True
+        self.shutdown_state: ShutdownState = ShutdownState.RUNNING
+        self.shutdown_session_id: Optional[str] = None
 
         # Reference market prices for price collar verification
         self.reference_market_prices: Dict[str, float] = {
@@ -162,6 +164,16 @@ class BrokerGateway:
         self.strategy_positions = {s: {} for s in ["STRAT_001", "STRAT_002", "STRAT_MEAN_REV_001"]}
         self.strategy_entry_prices = {s: {} for s in ["STRAT_001", "STRAT_002", "STRAT_MEAN_REV_001"]}
         self.portfolio_exposure = 0.0
+        
+        # Restore shutdown state
+        try:
+            cur = self.db.conn.execute("SELECT shutdown_session_id, status FROM shutdown_sessions ORDER BY requested_at DESC LIMIT 1")
+            row = cur.fetchone()
+            if row:
+                self.shutdown_session_id = row["shutdown_session_id"]
+                self.shutdown_state = ShutdownState(row["status"])
+        except sqlite3.OperationalError:
+            pass # Table might not exist in old migrations
 
         # Query all orders
         cur = self.db.conn.execute("SELECT * FROM order_ledger ORDER BY created_at ASC")
@@ -260,6 +272,57 @@ class BrokerGateway:
                 return f"REJECTED_STALE_MARKET_DATA ({staleness_ms:.1f}ms > {self.max_market_data_staleness_ms}ms)"
 
         return None
+
+    def _verify_shutdown_guard(self, intent: OrderIntent) -> Optional[str]:
+        if self.shutdown_state in [ShutdownState.RUNNING, ShutdownState.RECOVERING]:
+            return None
+            
+        if self.shutdown_state in [ShutdownState.SHUTDOWN_REQUESTED, ShutdownState.DRAINING]:
+            if not getattr(intent, 'reduce_only', False):
+                return "SHUTDOWN_NEW_ENTRIES_BLOCKED"
+                
+            # Verify it actually reduces exposure
+            pos = self.strategy_positions.get(intent.strategy_id, {}).get(intent.symbol, 0.0)
+            if pos == 0.0:
+                return "SHUTDOWN_REDUCE_ONLY_NO_POSITION"
+            if pos > 0 and intent.side == OrderSide.BUY:
+                return "SHUTDOWN_REDUCE_ONLY_INCREASES_EXPOSURE"
+            if pos < 0 and intent.side == OrderSide.SELL:
+                return "SHUTDOWN_REDUCE_ONLY_INCREASES_EXPOSURE"
+            # It's a valid reduce-only
+            return None
+            
+        return "SHUTDOWN_ENTRIES_BLOCKED"
+
+    def initiate_shutdown(self, reason: str, initiated_by: str = "SYSTEM") -> str:
+        if self.shutdown_state not in [ShutdownState.RUNNING]:
+            raise ValueError(f"Cannot initiate shutdown from state {self.shutdown_state}")
+            
+        import uuid
+        self.shutdown_session_id = str(uuid.uuid4())
+        self.shutdown_state = ShutdownState.SHUTDOWN_REQUESTED
+        
+        now = time.time()
+        with self.db.conn:
+            self.db.conn.execute(
+                "INSERT INTO shutdown_sessions (shutdown_session_id, requested_at, initiated_by, status, reason, started_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (self.shutdown_session_id, now, initiated_by, self.shutdown_state.value, reason, now)
+            )
+            
+        return self.shutdown_session_id
+        
+    def _record_shutdown_event(self, event_type: str, order_id: Optional[str] = None, execution_id: Optional[str] = None):
+        if not self.shutdown_session_id:
+            return
+            
+        import uuid
+        now = time.time()
+        with self.db.conn:
+            self.db.conn.execute(
+                "INSERT INTO shutdown_events (shutdown_event_id, shutdown_session_id, order_id, execution_id, event_type, occurred_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), self.shutdown_session_id, order_id, execution_id, event_type, now)
+            )
+
 
     # 3. Atomic Risk Reservation & Price Collar
     def reserve_risk_atomically(
@@ -412,6 +475,9 @@ class BrokerGateway:
 
         # Step 2: Fail-Closed Guard Check
         guard_rejection = self.verify_fail_closed_guard(intent.symbol, strategy_id=intent.strategy_id, signature=intent.signature)
+        if not guard_rejection:
+            guard_rejection = self._verify_shutdown_guard(intent)
+            
         if guard_rejection:
             res = OrderResult(
                 request_id=intent.request_id,
@@ -762,6 +828,9 @@ class BrokerGateway:
         """Processes an async/webhook execution report. Handles deduplication and out-of-order events."""
         if not self.db.record_execution(execution_id, order_id, qty, price):
             return False  # Duplicate
+            
+        if self.shutdown_state != ShutdownState.RUNNING:
+            self._record_shutdown_event("EXECUTION_RECEIVED", order_id, execution_id)
 
         order = self.db.get_order(order_id)
         if not order:
@@ -804,8 +873,12 @@ class BrokerGateway:
                 strat_entry[sym] = 0.0
 
         # Update state machine. If out-of-order, transition to FILLED directly.
-        new_state = OrderState.FILLED
-        if current_state != OrderState.FILLED:
+        prev_executed = order.get("executed_qty", 0.0)
+        total_order_qty = order.get("qty", qty)
+        is_partial = (prev_executed + qty) < total_order_qty
+        
+        new_state = OrderState.PARTIALLY_FILLED if is_partial else OrderState.FILLED
+        if current_state not in [OrderState.FILLED, OrderState.CANCELLED]:
             self.db.transition_state(
                 order_id, 
                 new_state, 
@@ -813,7 +886,7 @@ class BrokerGateway:
                 executed_qty=qty,
                 execution_price=price,
                 execution_id=execution_id,
-                reserved_value=0.0 # Clear remaining reservation
+                reserved_value=0.0 if not is_partial else reserved_val # Clear remaining reservation only if full
             )
             self._notify_order_transition(order_id, strat_id, sym, side.value, qty, price, new_state.value, "Async Execution Applied")
         else:

@@ -15,6 +15,17 @@ class OrderSide(str, Enum):
     SELL = "SELL"
 
 
+class ShutdownState(str, Enum):
+    RUNNING = "RUNNING"
+    SHUTDOWN_REQUESTED = "SHUTDOWN_REQUESTED"
+    DRAINING = "DRAINING"
+    RECOVERY_REQUIRED = "RECOVERY_REQUIRED"
+    RECOVERING = "RECOVERING"
+    RECONCILIATION_REQUIRED = "RECONCILIATION_REQUIRED"
+    STOPPED = "STOPPED"
+    FAILED_SAFE = "FAILED_SAFE"
+
+
 
 class OrderState(str, Enum):
     RECEIVED = "RECEIVED"
@@ -40,6 +51,7 @@ class OrderIntent(BaseModel):
     side: OrderSide = Field(..., description="Order Side: BUY or SELL")
     qty: float = Field(..., gt=0, description="Order Quantity")
     price: float = Field(..., gt=0, description="Order Price")
+    reduce_only: bool = Field(default=False, description="Whether this is a reduce-only closing order")
     timestamp: float = Field(default_factory=time.time, description="Client creation timestamp")
     expiry: float = Field(default_factory=lambda: time.time() + 30.0, description="Order Expiry timestamp")
     signature: str = Field(..., description="Cryptographic signature of the intent")

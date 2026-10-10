@@ -24,3 +24,4 @@ Regression repair after T15 concurrent reservation integration (Commit: c6c48782
 ### Limitations
 - **Fee Configuration**: The initial risk reservation calculation doesn't explicitly deduct full dynamic fee variables yet; currently uses fixed `requested_notional`.
 - **Database Scalability**: Relying on `BEGIN EXCLUSIVE` inside SQLite is extremely robust for single-node isolated backtesting and paper trading (fulfilling requirements), but will cause contention lock-timeouts if the concurrency load exceeds hundreds of transactions per second on the same file.
+- GAP-05: Implemented Safe Shutdown and Recovery (Commit 5706b3357606d295bbd3916e5783df628288d3f9)
