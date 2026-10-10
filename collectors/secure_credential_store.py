@@ -23,9 +23,14 @@ import secrets
 from typing import Dict, Any, Optional, Tuple
 
 DEFAULT_STORE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "config")
+BACKUP_STORE_DIR = "/home/ubuntu/algo-backups/algolab-data-lab-2026-09-23/data/config"
+
 SYSTEM_KEY_PATH = "/etc/algolab/.master_key"
 LEGACY_KEY_PATH = os.path.join(DEFAULT_STORE_DIR, ".master_key")
+BACKUP_KEY_PATH = os.path.join(BACKUP_STORE_DIR, ".master_key")
+
 STORE_FILE_PATH = os.environ.get("ALGOLAB_STORE_FILE_PATH") or os.path.join(DEFAULT_STORE_DIR, "encrypted_credentials.enc")
+BACKUP_STORE_PATH = os.path.join(BACKUP_STORE_DIR, "encrypted_credentials.enc")
 
 try:
     os.makedirs(os.path.dirname(STORE_FILE_PATH), exist_ok=True)
@@ -37,41 +42,50 @@ except Exception:
 class SecureCredentialStore:
     """Authenticated symmetric encryption store using PBKDF2-HMAC-SHA256 and HMAC-SHA256."""
 
-    def __init__(self, key_path: Optional[str] = None, store_path: str = STORE_FILE_PATH):
+    def __init__(self, key_path: Optional[str] = None, store_path: Optional[str] = None):
         # Allow environment path override or parameter, defaulting to system-level root key
         self.key_path = key_path or os.environ.get("ALGOLAB_MASTER_KEY_PATH") or SYSTEM_KEY_PATH
-        self.store_path = store_path
+        self.store_path = store_path or STORE_FILE_PATH
         self.master_key = self._get_or_create_master_key()
 
     def _get_or_create_master_key(self) -> bytes:
         """Retrieves or generates a secure 256-bit master key."""
         target_path = self.key_path
 
-        # Check system key path first, then legacy fallback if system key not yet created
-        if os.path.exists(target_path):
-            try:
-                with open(target_path, "rb") as f:
-                    key = f.read()
-                    if len(key) == 32:
-                        return key
-            except Exception:
-                pass
-        elif os.path.exists(LEGACY_KEY_PATH):
-            try:
-                with open(LEGACY_KEY_PATH, "rb") as f:
-                    key = f.read()
-                    if len(key) == 32:
-                        return key
-            except Exception:
-                pass
+        # Check system key path first, then legacy/backup fallback if system key not yet created
+        for k_path in [target_path, LEGACY_KEY_PATH, BACKUP_KEY_PATH]:
+            if os.path.exists(k_path):
+                try:
+                    with open(k_path, "rb") as f:
+                        key = f.read()
+                        if len(key) == 32:
+                            return key
+                except Exception:
+                    pass
 
         # Generate new random 256-bit key in target path
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        key = secrets.token_bytes(32)
-        with open(target_path, "wb") as f:
-            f.write(key)
-        os.chmod(target_path, 0o600)
-        return key
+        try:
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            key = secrets.token_bytes(32)
+            with open(target_path, "wb") as f:
+                f.write(key)
+            os.chmod(target_path, 0o600)
+            return key
+        except Exception:
+            target_path = LEGACY_KEY_PATH
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            if os.path.exists(target_path):
+                try:
+                    with open(target_path, "rb") as f:
+                        key = f.read()
+                        if len(key) == 32:
+                            return key
+                except Exception:
+                    pass
+            key = secrets.token_bytes(32)
+            with open(target_path, "wb") as f:
+                f.write(key)
+            return key
 
     def _derive_keys(self, salt: bytes) -> Tuple[bytes, bytes]:
         """Derives 256-bit encryption key and 256-bit MAC key using PBKDF2-HMAC-SHA256."""
@@ -138,10 +152,36 @@ class SecureCredentialStore:
 
     def load_credentials(self) -> Dict[str, Any]:
         """Loads and decrypts credentials from storage path."""
-        if not os.path.exists(self.store_path):
+        target_store = self.store_path
+        target_key = self.key_path
+
+        if not os.path.exists(target_store) and os.path.exists(BACKUP_STORE_PATH):
+            target_store = BACKUP_STORE_PATH
+            target_key = BACKUP_KEY_PATH
+
+        if not os.path.exists(target_store):
             return {}
+
+        if target_key != self.key_path and os.path.exists(target_key):
+            try:
+                with open(target_key, "rb") as f:
+                    saved_key = f.read()
+                    if len(saved_key) == 32:
+                        old_key = self.master_key
+                        self.master_key = saved_key
+                        try:
+                            with open(target_store, "r") as f:
+                                content = f.read()
+                            decrypted = self.decrypt_data(content)
+                            if decrypted is not None:
+                                return decrypted
+                        finally:
+                            self.master_key = old_key
+            except Exception:
+                pass
+
         try:
-            with open(self.store_path, "r") as f:
+            with open(target_store, "r") as f:
                 content = f.read()
             decrypted = self.decrypt_data(content)
             return decrypted if decrypted is not None else {}

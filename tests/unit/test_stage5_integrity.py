@@ -13,6 +13,7 @@ import concurrent.futures
 from datetime import datetime, timezone, timedelta
 import pytest
 from fastapi.testclient import TestClient
+from apps.api.core.config import settings
 
 from services.backtest_engine.contracts import (
     ExperimentDefinition,
@@ -94,7 +95,7 @@ def test_dataset_drift_and_checksum_mismatch():
     assert exp_normal.fingerprint != exp_drifted.fingerprint, "Fingerprint must change on dataset checksum drift"
 
     # API level validation rejection on invalid format checksums
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
     bad_payload = {
         "name": "Drift Test",
         "strategy_id": "Canonical_SMA",
@@ -208,7 +209,7 @@ def test_concurrent_experiment_isolation():
 # ----------------------------------------------------------------------
 def test_graceful_failure_handling_and_recovery():
     """System safely handles and recovers from malformed inputs and exceptions without crashing."""
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
 
     # 1. Invalid date range (start > end)
     res1 = client.post("/api/v1/experiments", json={

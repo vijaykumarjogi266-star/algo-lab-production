@@ -1,0 +1,28 @@
+{
+  "_comment": "Algo Lab Angel One SmartAPI Market Data Configuration Template. DO NOT PUT PLAINTEXT SECRETS IN THIS FILE.",
+  "provider": "ANGEL_ONE",
+  "enabled": false,
+  "market_data_mode": "MOCK",
+  "rest_host": "https://apiconnect.angelone.in",
+  "websocket_host": "wss://smartapisocket.angelone.in/smart-stream",
+  "scrip_master_url": "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
+  "credentials": {
+    "api_key": "${ANGEL_ONE_API_KEY}",
+    "client_code": "${ANGEL_ONE_CLIENT_CODE}",
+    "password": "${ANGEL_ONE_PASSWORD}",
+    "totp_key": "${ANGEL_ONE_TOTP_KEY}"
+  },
+  "subscription": {
+    "exchange": "NSE",
+    "symbols": ["SBIN", "RELIANCE", "TCS", "ITC", "HAL", "INFY"],
+    "stream_mode": 2,
+    "max_tokens": 500,
+    "ping_interval_seconds": 30,
+    "reconnect_max_retries": 5
+  },
+  "safety_invariants": {
+    "allow_live_trading": false,
+    "allow_real_broker_execution": false,
+    "allow_real_time_market_data": false
+  }
+}

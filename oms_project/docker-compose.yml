@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  # Centralized Broker Gateway (The "Heart" - Has External Exchange Egress Access)
+  broker_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oms_broker_gateway
+    read_only: true
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=seccomp.json
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - internal_algo_net
+      - exchange_egress_net
+
+  # Mean Reversion Bot (Algo Pod - Hardened, Non-root 10001:10001, Internal Network Only)
+  mean_reversion_bot:
+    build:
+      context: .
+      dockerfile: strategies/mean_reversion/Dockerfile
+    container_name: oms_mean_reversion_bot
+    read_only: true
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=seccomp.json
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes:
+      - ./workspace:/app/workspace:rw
+    environment:
+      - STRATEGY_ID=STRAT_MEAN_REV_001
+      - GATEWAY_URL=http://broker_gateway:8000
+      - REDIS_HOST=redis
+    networks:
+      - internal_algo_net
+    depends_on:
+      - broker_gateway
+
+networks:
+  # Internal Network: Algo Pods can only communicate with Broker Gateway & Redis
+  internal_algo_net:
+    driver: bridge
+    internal: true
+
+  # External Egress Network: Only Broker Gateway is attached
+  exchange_egress_net:
+    driver: bridge
+    internal: false

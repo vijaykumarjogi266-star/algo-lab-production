@@ -50,8 +50,9 @@ class IndianCostCalculator:
         # 4. SEBI Regulatory Fee (10 INR per crore = 0.0001%)
         sebi_fee = turnover * self.config.sebi_turnover_fee_rate
 
-        # 5. GST (18% on Brokerage + Exchange Fee)
-        gst = (brokerage + exchange_fee) * self.config.gst_rate
+        # 5. GST (18% on Taxable Financial Services: Brokerage + Exchange Fee + SEBI Fee)
+        taxable_services = brokerage + exchange_fee + sebi_fee
+        gst = taxable_services * self.config.gst_rate
 
         # 6. Stamp Duty (0.015% on BUY side only)
         stamp_duty = (turnover * self.config.stamp_duty_rate) if side == OrderSide.BUY else 0.0

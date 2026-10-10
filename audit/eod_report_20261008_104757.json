@@ -1,0 +1,46 @@
+{
+  "report_id": "EOD_20261008_104757",
+  "generated_at_utc": "2026-10-08T10:47:57.263071+00:00",
+  "strategy_id": "STRAT_HYBRID_001",
+  "financial_summary": {
+    "initial_capital": 100000.0,
+    "final_equity": 100000.0,
+    "gross_pnl": 0.0,
+    "statutory_friction": {
+      "brokerage": 0.0,
+      "stt": 0.0,
+      "exchange_txn_fee": 0.0,
+      "sebi_turnover_fee": 0.0,
+      "stamp_duty": 0.0,
+      "gst": 0.0,
+      "total_friction": 0.0
+    },
+    "net_pnl": 0.0,
+    "net_pnl_pct": 0.0
+  },
+  "reconciliation_audit": {
+    "status": "MATCH",
+    "variance": 0.0,
+    "broker_ledger_assets": 100000.0,
+    "exchange_cash_balance": 100000.0,
+    "is_zero_variance": true
+  },
+  "operational_health": {
+    "total_trades_executed": 0,
+    "kill_switch_active": false,
+    "simulation_mode": true,
+    "logs_sample": [
+      "[2026-10-08 16:17:57 IST] === Starting Market Close Ritual (03:30 PM IST) for 2026-10-04 ===",
+      "[2026-10-08 16:17:57 IST] Triggering EOD Automated Auditor for Asset Reconciliation & P&L Audit...",
+      "[2026-10-08 16:17:57 IST] EOD Audit Complete: Reconciliation Status = MATCH (\u0394 = \u20b90.00)",
+      "[2026-10-08 16:17:57 IST] Audit PDF Saved: /home/ubuntu/algolab/audit/eod_report_20261008_104757.pdf",
+      "[2026-10-08 16:17:57 IST] Audit JSON Saved: /home/ubuntu/algolab/audit/eod_report_20261008_104757.json",
+      "[2026-10-08 16:17:57 IST] === Starting Pre-Market Ritual for Friday, 2026-10-02 ===",
+      "[2026-10-08 16:17:57 IST] Calendar Check: Friday -> Exchange Holiday (Trading Day: False)",
+      "[2026-10-08 16:17:57 IST] Market Closed today per NSE Calendar schedule. Skipping trading pod launch.",
+      "[2026-10-08 16:17:57 IST] === Starting Market Close Ritual (03:30 PM IST) for 2026-10-02 ===",
+      "[2026-10-08 16:17:57 IST] Triggering EOD Automated Auditor for Asset Reconciliation & P&L Audit..."
+    ]
+  },
+  "executed_trades": []
+}

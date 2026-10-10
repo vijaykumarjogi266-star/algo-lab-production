@@ -1,0 +1,45 @@
+{
+  "report_id": "EOD_20261008_104600",
+  "generated_at_utc": "2026-10-08T10:46:00.050305+00:00",
+  "strategy_id": "STRAT_HYBRID_001",
+  "financial_summary": {
+    "initial_capital": 100000.0,
+    "final_equity": 100000.0,
+    "gross_pnl": 0.0,
+    "statutory_friction": {
+      "brokerage": 7.2,
+      "stt": 3.0,
+      "exchange_txn_fee": 0.72,
+      "sebi_turnover_fee": 0.02,
+      "stamp_duty": 0.36,
+      "gst": 1.42,
+      "total_friction": 12.72
+    },
+    "net_pnl": -12.72,
+    "net_pnl_pct": -0.01
+  },
+  "reconciliation_audit": {
+    "status": "MATCH",
+    "variance": 0.0,
+    "broker_ledger_assets": 100000.0,
+    "exchange_cash_balance": 100000.0,
+    "is_zero_variance": true
+  },
+  "operational_health": {
+    "total_trades_executed": 2,
+    "kill_switch_active": false,
+    "simulation_mode": true,
+    "logs_sample": [
+      "[2026-10-08 16:16:00 IST] Pre-Flight Verification PASSED. Initializing Market Data Feed & Broker Gateway...",
+      "[2026-10-08 16:16:00 IST] Algo Pod [STRAT_HYBRID_001] successfully initialized and online.",
+      "[2026-10-08 16:16:00 IST] Executing Active Market System Health Check...",
+      "[2026-10-08 16:16:00 IST] SYSTEM HEALTH WARNING: Component degradation detected. Triggering single auto-restart...",
+      "[2026-10-08 16:16:00 IST] Auto-restart recovery completed.",
+      "[2026-10-08 16:16:00 IST] === Starting Market Close Ritual (03:30 PM IST) for 2026-10-01 ===",
+      "[2026-10-08 16:16:00 IST] SYMMETRY SHUTDOWN: Force-flattening all active strategy positions...",
+      "[2026-10-08 16:16:00 IST] Flattening Complete: 1 position legs closed.",
+      "[2026-10-08 16:16:00 IST] Terminating Algo Pods and stopping Broker Gateway / Data Feed...",
+      "[2026-10-08 16:16:00 IST] Triggering EOD Automated Auditor for Asset Reconciliation & P&L Audit..."
+    ]
+  }
+}

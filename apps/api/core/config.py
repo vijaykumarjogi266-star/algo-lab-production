@@ -28,6 +28,16 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_V1_PREFIX: str = "/api/v1"
 
+    # Internal API Authentication
+    INTERNAL_API_SECRET: str = Field(
+        default="stage27-v1-internal-key-9982",
+        description="Internal secret token for loopback API control endpoints.",
+    )
+    ENFORCE_INTERNAL_AUTH: bool = Field(
+        default=True,
+        description="Require authentication for state-mutating control endpoints.",
+    )
+
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 

@@ -36,3 +36,19 @@ class SystemInfoResponse(BaseModel):
     timestamp: datetime
     safety_status: SafetyStatusResponse
     core_principles_count: int
+
+
+class MarketFeedStatusResponse(BaseModel):
+    provider_name: str = Field(default="ANGEL_ONE", description="Provider adapter name")
+    data_source: str = Field(default="MOCK", description="Data source: ANGEL_ONE / OTHER_PROVIDER / CACHE / MOCK")
+    collection_mode: str = Field(default="FORWARD", description="Collection mode: FORWARD / REPLAY")
+    feed_health: str = Field(default="UNVERIFIED", description="Feed health: HEALTHY / STALE / DISCONNECTED / UNVERIFIED")
+    latest_event_timestamp_utc: Optional[datetime] = Field(default=None, description="Latest tick timestamp")
+    receive_timestamp_utc: Optional[datetime] = Field(default=None, description="Latest receipt timestamp")
+    real_connection_observed: bool = Field(default=False, description="Whether real authenticated connection was verified")
+    active_subscriptions: List[str] = Field(default_factory=list, description="Subscribed symbols/tokens")
+    execution_mode: str = Field(default="PAPER", description="Execution mode: NONE / PAPER")
+    accounting_validation_status: str = Field(default="UNVALIDATED", description="VERIFIED / UNVALIDATED")
+    accounting_blockers: List[str] = Field(default_factory=list, description="List of unresolved accounting discrepancies")
+    code_version: str = Field(default="2026-09-25.v1", description="Adapter build revision")
+    diagnostic_details: str = Field(default="", description="Diagnostic details on connectivity and validation")

@@ -8,10 +8,14 @@ from services.market_data.registry import compute_dataset_checksum
 from data.schemas.canonical_market_data import CanonicalMarketDataBar
 
 
+from apps.api.core.config import settings
+
+
 @pytest.fixture
 async def async_client():
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+    headers = {"X-Internal-Secret": settings.INTERNAL_API_SECRET}
+    async with AsyncClient(transport=transport, base_url="http://testserver", headers=headers) as client:
         yield client
 
 

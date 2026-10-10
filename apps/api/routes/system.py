@@ -4,7 +4,11 @@ from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter
 from apps.api.core.config import settings
-from apps.api.schemas.health import SafetyStatusResponse, SystemInfoResponse
+from apps.api.schemas.health import (
+    SafetyStatusResponse,
+    SystemInfoResponse,
+    MarketFeedStatusResponse,
+)
 
 router = APIRouter(prefix="/system", tags=["System"])
 
@@ -66,3 +70,35 @@ async def get_system_info() -> SystemInfoResponse:
 async def get_principles() -> List[str]:
     """Returns the immutable 25 principles governing all Algo Lab research and engines."""
     return NON_NEGOTIABLE_PRINCIPLES
+
+
+@router.get("/market-feed/status", response_model=MarketFeedStatusResponse, summary="Get authentic market data feed status and provenance")
+async def get_market_feed_status() -> MarketFeedStatusResponse:
+    """Returns authentic market-data provider status, provenance, feed health, and accounting blockers."""
+    from services.market_data.adapters.angel_one_instruments import AngelOneInstrumentMaster
+    inst_master = AngelOneInstrumentMaster()
+    allowlist_symbols = inst_master.list_allowlist_symbols()
+
+    return MarketFeedStatusResponse(
+        provider_name="ANGEL_ONE",
+        data_source="MOCK",
+        collection_mode="FORWARD",
+        feed_health="UNVERIFIED",
+        latest_event_timestamp_utc=None,
+        receive_timestamp_utc=None,
+        real_connection_observed=False,
+        active_subscriptions=allowlist_symbols,
+        execution_mode="PAPER",
+        accounting_validation_status="UNVALIDATED",
+        accounting_blockers=[
+            "UNRECONCILED_HISTORICAL_SOAK_GST_ARITHMETIC (Recorded ₹377.27 plug vs ₹332.19 statutory)",
+            "INCONSISTENT_TURNOVER_LEVY_DERIVATION (STT implies ₹9.15L vs Stamp Duty implies ₹7.41L)",
+            "BASELINE_TRADE_LOG_ABSENCE_NOT_RECONSTRUCTABLE (3-trade scenario lacks source execution logs)",
+        ],
+        code_version="2026-09-25.v1",
+        diagnostic_details=(
+            "MOCK INTEGRATION VERIFIED — REAL CONNECTION NOT OBSERVED. "
+            "Gateway apiconnect.angelone.in:443 timed out (cause unconfirmed). "
+            "Validated financial reporting and strategy promotion remain strictly BLOCKED."
+        ),
+    )

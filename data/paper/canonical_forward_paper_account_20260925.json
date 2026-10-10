@@ -1,0 +1,54 @@
+{
+  "account_metadata": {
+    "account_id": "ACC-FORWARD-CANONICAL-100K-01",
+    "account_type": "CANONICAL_FORWARD_PAPER_ACCOUNT",
+    "created_at_utc": "2026-09-25T10:15:00Z",
+    "status": "GATED_STANDBY",
+    "governance_ceiling": "PAPER_TRADING_ONLY",
+    "operating_mode": "REAL_TIME_MARKET_DATA_OBSERVATION_STANDBY",
+    "ledger_engine": "InstitutionalPortfolioLedger",
+    "accounting_standard": "DOUBLE_ENTRY_STATUTORY_INDIAN_EQUITY"
+  },
+  "balance_sheet": {
+    "initial_capital_inr": 100000.0,
+    "cash_balance_inr": 100000.0,
+    "blocked_margin_inr": 0.0,
+    "open_holdings_market_value_inr": 0.0,
+    "total_equity_inr": 100000.0,
+    "gross_realized_pnl_inr": 0.0,
+    "total_friction_inr": 0.0,
+    "net_realized_pnl_inr": 0.0,
+    "total_unrealized_pnl_inr": 0.0,
+    "return_pct": 0.0,
+    "trade_count": 0,
+    "trading_days": 0,
+    "positions": {}
+  },
+  "gate_prerequisites": {
+    "accounting_validation_gate": {
+      "required_status": "VERIFIED",
+      "current_status": "BLOCKED",
+      "gate_passed": false,
+      "blocker_reason": "Historical records contain unverified GST arithmetic and inconsistent turnover derivations."
+    },
+    "fresh_data_streaming_gate": {
+      "required_status": "AUTHENTICATED_STREAMING_VERIFIED",
+      "current_status": "MOCK_VERIFIED_FRESH_STREAMING_PENDING",
+      "gate_passed": false,
+      "blocker_reason": "Real gateway apiconnect.angelone.in:443 timed out (cause unconfirmed). Real fresh streaming pending."
+    },
+    "strategy_execution_authorization": {
+      "strategy_execution_enabled": false,
+      "order_routing_enabled": false,
+      "verdict": "STRATEGY EXECUTION BLOCKED PENDING GATES"
+    }
+  },
+  "isolation_policy": {
+    "quarantined_historical_accounts": [
+      "ACC-BASE-100K-01",
+      "ACC-REPLAY-100K-02"
+    ],
+    "cross_account_mutation_prohibited": true,
+    "bleed_prevention_verified": true
+  }
+}

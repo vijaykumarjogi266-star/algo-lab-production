@@ -1,0 +1,102 @@
+{
+  "provenance": {
+    "source_url": "https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json",
+    "retrieval_timestamp_utc": "2026-09-25T08:05:40Z",
+    "total_catalog_size": 143458,
+    "exchange": "NSE",
+    "segment": "EQ",
+    "verification_method": "DIRECT_HTTPS_GET_AND_JSON_PARSE"
+  },
+  "instruments": {
+    "SBIN": {
+      "token": "3045",
+      "symbol": "SBIN-EQ",
+      "name": "SBIN",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "10.000000",
+      "tick_size_inr": 0.10,
+      "freeze_qty": "101536",
+      "is_cas_enabled": true,
+      "isin": "INE062A01020"
+    },
+    "RELIANCE": {
+      "token": "2885",
+      "symbol": "RELIANCE-EQ",
+      "name": "RELIANCE",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "10.000000",
+      "tick_size_inr": 0.10,
+      "freeze_qty": "81195",
+      "is_cas_enabled": true,
+      "isin": "INE002A01018"
+    },
+    "TCS": {
+      "token": "11536",
+      "symbol": "TCS-EQ",
+      "name": "TCS",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "10.000000",
+      "tick_size_inr": 0.10,
+      "freeze_qty": "47035",
+      "is_cas_enabled": true,
+      "isin": "INE467B01029"
+    },
+    "ITC": {
+      "token": "1660",
+      "symbol": "ITC-EQ",
+      "name": "ITC",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "5.000000",
+      "tick_size_inr": 0.05,
+      "freeze_qty": "363354",
+      "is_cas_enabled": true,
+      "isin": "INE154A01025"
+    },
+    "HAL": {
+      "token": "2303",
+      "symbol": "HAL-EQ",
+      "name": "HAL",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "10.000000",
+      "tick_size_inr": 0.10,
+      "freeze_qty": "20732",
+      "is_cas_enabled": true,
+      "isin": "INE066F01012"
+    },
+    "INFY": {
+      "token": "1594",
+      "symbol": "INFY-EQ",
+      "name": "INFY",
+      "expiry": "",
+      "strike": "-1.000000",
+      "lotsize": "1",
+      "instrumenttype": "",
+      "exch_seg": "NSE",
+      "tick_size": "10.000000",
+      "tick_size_inr": 0.10,
+      "freeze_qty": "97374",
+      "is_cas_enabled": true,
+      "isin": "INE009A01021"
+    }
+  }
+}

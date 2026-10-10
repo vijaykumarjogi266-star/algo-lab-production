@@ -23,6 +23,7 @@ from apps.api.routes.replay import router as replay_router
 from apps.api.routes.paper_trading import router as paper_trading_router
 from apps.api.routes.brokers import router as brokers_router
 from apps.api.routes.research_ui import router as research_ui_router
+from apps.api.routers.dashboard import router as dashboard_router
 
 # Initialize structured logging
 setup_logging()
@@ -54,6 +55,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from apps.api.core.security import InternalAuthMiddleware
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -62,6 +65,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Internal Control API Authentication Middleware
+app.add_middleware(InternalAuthMiddleware)
 
 
 @app.middleware("http")
@@ -91,6 +97,7 @@ app.include_router(replay_router, prefix=settings.API_V1_PREFIX)
 app.include_router(paper_trading_router, prefix=settings.API_V1_PREFIX)
 app.include_router(brokers_router, prefix=settings.API_V1_PREFIX)
 app.include_router(research_ui_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/", summary="Root endpoint")

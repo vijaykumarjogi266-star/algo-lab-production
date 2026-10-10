@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algo Lab Settings | Credentials</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .input-dark { background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; }
+        .input-dark:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 1px #3b82f6; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4">
+
+    <!-- Header -->
+    <div class="w-full max-w-4xl mb-8">
+        <h1 class="text-3xl font-bold tracking-tight">System Settings</h1>
+        <p class="text-slate-400 mt-2">Manage broker API integrations and securely vault your credentials.</p>
+    </div>
+
+    <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Dhan Card -->
+        <div class="glass-card rounded-xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 mt-4 mr-4 flex items-center space-x-2" id="dhan-status">
+                <!-- Status icon injected by JS -->
+            </div>
+            
+            <h2 class="text-xl font-semibold mb-1 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                DhanHQ API
+            </h2>
+            <p class="text-sm text-slate-400 mb-6 border-b border-slate-700 pb-4">Connect your Dhan account for free, lightning-fast order execution.</p>
+            
+            <form id="dhan-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Client ID</label>
+                    <input type="password" id="dhan_client_id" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="e.g. 1100123456" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Access Token</label>
+                    <input type="password" id="dhan_access_token" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp..." required>
+                </div>
+                
+                <div class="pt-4 flex items-center justify-between">
+                    <span id="dhan-msg" class="text-xs"></span>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        Save to Secure Vault
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Angel One Card -->
+        <div class="glass-card rounded-xl p-6 shadow-xl relative overflow-hidden opacity-75 hover:opacity-100 transition-opacity">
+            <div class="absolute top-0 right-0 mt-4 mr-4 flex items-center space-x-2" id="ao-status">
+                <!-- Status icon injected by JS -->
+            </div>
+
+            <h2 class="text-xl font-semibold mb-1 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Angel One SmartAPI
+            </h2>
+            <p class="text-sm text-slate-400 mb-6 border-b border-slate-700 pb-4">Legacy fallback integration. Requires static IP whitelisting.</p>
+            
+            <form id="ao-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">SmartAPI Key</label>
+                    <input type="password" id="ao_api_key" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="****************">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Client Code</label>
+                        <input type="password" id="ao_client_code" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="A1234">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">PIN / Password</label>
+                        <input type="password" id="ao_password" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="****">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">TOTP Secret</label>
+                    <input type="password" id="ao_totp_key" class="input-dark w-full rounded-md px-3 py-2 text-sm placeholder-slate-500" placeholder="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+                </div>
+                
+                <div class="pt-4 flex items-center justify-between">
+                    <span id="ao-msg" class="text-xs"></span>
+                    <button type="submit" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        Save to Secure Vault
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Security Badge -->
+    <div class="w-full max-w-4xl mt-10 text-center">
+        <div class="inline-flex items-center space-x-2 text-xs text-slate-500 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span>Credentials are client-side masked and symmetrically encrypted on the backend via PBKDF2-HMAC-SHA256.</span>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/credentials';
+
+        const configuredBadge = `<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full border border-emerald-500/30">Active</span>`;
+        const unconfiguredBadge = `<span class="px-2 py-1 bg-slate-500/20 text-slate-400 text-xs font-semibold rounded-full border border-slate-500/30">Not Configured</span>`;
+
+        // Load existing status
+        async function loadStatus() {
+            try {
+                const res = await fetch(API_BASE);
+                const data = await res.json();
+
+                // Dhan Status
+                if(data.DHAN.configured) {
+                    document.getElementById('dhan-status').innerHTML = configuredBadge;
+                    document.getElementById('dhan_client_id').placeholder = `Configured (${data.DHAN.client_id})`;
+                    document.getElementById('dhan_access_token').placeholder = `Configured (********)`;
+                } else {
+                    document.getElementById('dhan-status').innerHTML = unconfiguredBadge;
+                }
+
+                // Angel One Status
+                if(data.ANGEL_ONE.configured) {
+                    document.getElementById('ao-status').innerHTML = configuredBadge;
+                    document.getElementById('ao_api_key').placeholder = `Configured (********)`;
+                    document.getElementById('ao_client_code').placeholder = `Configured (${data.ANGEL_ONE.client_code})`;
+                    document.getElementById('ao_password').placeholder = `Configured (********)`;
+                    document.getElementById('ao_totp_key').placeholder = `Configured (********)`;
+                } else {
+                    document.getElementById('ao-status').innerHTML = unconfiguredBadge;
+                }
+            } catch (err) {
+                console.error("Failed to load credential status", err);
+            }
+        }
+
+        // Handle Dhan Form
+        document.getElementById('dhan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const msg = document.getElementById('dhan-msg');
+            btn.disabled = true;
+            btn.innerHTML = 'Saving...';
+            
+            const payload = {
+                client_id: document.getElementById('dhan_client_id').value,
+                access_token: document.getElementById('dhan_access_token').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/dhan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    msg.innerHTML = '<span class="text-emerald-400">Vault updated securely.</span>';
+                    e.target.reset();
+                    loadStatus();
+                }
+            } catch (err) {
+                msg.innerHTML = '<span class="text-red-400">Save failed.</span>';
+            } finally {
+                setTimeout(() => { msg.innerHTML = ''; btn.disabled = false; btn.innerHTML = 'Save to Secure Vault'; }, 3000);
+            }
+        });
+
+        // Handle Angel One Form
+        document.getElementById('ao-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const msg = document.getElementById('ao-msg');
+            btn.disabled = true;
+            btn.innerHTML = 'Saving...';
+            
+            const payload = {
+                api_key: document.getElementById('ao_api_key').value,
+                client_code: document.getElementById('ao_client_code').value,
+                password: document.getElementById('ao_password').value,
+                totp_key: document.getElementById('ao_totp_key').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/angel_one`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    msg.innerHTML = '<span class="text-emerald-400">Vault updated securely.</span>';
+                    e.target.reset();
+                    loadStatus();
+                }
+            } catch (err) {
+                msg.innerHTML = '<span class="text-red-400">Save failed.</span>';
+            } finally {
+                setTimeout(() => { msg.innerHTML = ''; btn.disabled = false; btn.innerHTML = 'Save to Secure Vault'; }, 3000);
+            }
+        });
+
+        // Init
+        loadStatus();
+    </script>
+</body>
+</html>

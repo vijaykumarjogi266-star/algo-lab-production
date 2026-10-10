@@ -44,10 +44,14 @@ def fresh_service():
     yield svc
 
 
+from apps.api.core.config import settings
+
+
 @pytest.fixture
 async def client(fresh_service):
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as c:
+    headers = {"X-Internal-Secret": settings.INTERNAL_API_SECRET}
+    async with AsyncClient(transport=transport, base_url="http://testserver", headers=headers) as c:
         yield c
 
 

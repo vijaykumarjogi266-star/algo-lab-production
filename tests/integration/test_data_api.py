@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 import pytest
 from httpx import ASGITransport, AsyncClient
 from apps.api.main import app
+from apps.api.core.config import settings
 
 
 @pytest.fixture
 async def async_client():
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+    headers = {"X-Internal-Secret": settings.INTERNAL_API_SECRET}
+    async with AsyncClient(transport=transport, base_url="http://testserver", headers=headers) as client:
         yield client
 
 

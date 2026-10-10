@@ -280,11 +280,13 @@ def test_strict_non_ranking_invariant():
         assert term not in res_dict
 
 
+from apps.api.core.config import settings
+
 def test_api_compare_endpoint():
     """Verifies POST /api/v1/experiments/compare endpoint integration."""
     service = BacktestService()
     set_service(service)
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
 
     # 1. Create two experiments
     payload1 = {

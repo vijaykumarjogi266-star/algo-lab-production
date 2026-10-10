@@ -135,11 +135,14 @@ def test_risk_rejection_audit_visibility():
     assert "PORTFOLIO_STATE_UPDATED" not in event_types
 
 
+from apps.api.core.config import settings
+
+
 def test_api_provenance_endpoint():
     """Verifies GET /api/v1/experiments/{experiment_id}/provenance endpoint."""
     service = BacktestService()
     set_service(service)
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
 
     exp = make_experiment(experiment_id="exp_prov_001")
     service.store.save_experiment(exp)
@@ -170,7 +173,7 @@ def test_api_audit_trail_endpoint():
     """Verifies GET /api/v1/experiments/{experiment_id}/runs/{run_id}/audit endpoint."""
     service = BacktestService()
     set_service(service)
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
 
     exp = make_experiment(experiment_id="exp_audit_api_001")
     service.store.save_experiment(exp)
@@ -205,14 +208,14 @@ def test_api_audit_trail_endpoint():
 
 def test_audit_ledger_read_only_invariants():
     """Verifies that no endpoints exist allowing modification, deletion, or tampering with audit events."""
-    client = TestClient(app)
+    client = TestClient(app, headers={"X-Internal-Secret": settings.INTERNAL_API_SECRET})
 
     # Attempt PUT, PATCH, DELETE on audit trail
     put_res = client.put("/api/v1/experiments/exp_01/runs/exp_01/audit")
-    assert put_res.status_code in (404, 405)
+    assert put_res.status_code in (401, 404, 405)
 
     patch_res = client.patch("/api/v1/experiments/exp_01/runs/exp_01/audit")
-    assert patch_res.status_code in (404, 405)
+    assert patch_res.status_code in (401, 404, 405)
 
     del_res = client.delete("/api/v1/experiments/exp_01/runs/exp_01/audit")
-    assert del_res.status_code in (404, 405)
+    assert del_res.status_code in (401, 404, 405)

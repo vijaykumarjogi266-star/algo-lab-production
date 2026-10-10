@@ -58,6 +58,17 @@ class BaseStrategy(ABC):
         self.name = name
         self.version = version
         self.parameters = parameters or {}
+        self.allocated_capital: float = 100000.0
+        self.latest_conviction: float = 0.5
+
+    def get_conviction(self) -> float:
+        """Returns current signal conviction score between 0.0 and 1.0."""
+        return max(0.0, min(1.0, float(self.latest_conviction)))
+
+    def on_order_update(self, order_result: Any, allocated_capital: Optional[float] = None) -> None:
+        """Receives order update & allocated capital from CIO Coordinator."""
+        if allocated_capital is not None:
+            self.allocated_capital = float(allocated_capital)
 
     @abstractmethod
     def evaluate(
@@ -88,3 +99,4 @@ class BaseStrategy(ABC):
             reason=reason,
             evidence={},
         )
+
