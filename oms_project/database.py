@@ -117,6 +117,68 @@ CREATE TABLE IF NOT EXISTS shutdown_events (
     metadata_json TEXT,
     FOREIGN KEY(shutdown_session_id) REFERENCES shutdown_sessions(shutdown_session_id)
 );
+CREATE TABLE IF NOT EXISTS paper_accounts (
+    account_id TEXT PRIMARY KEY,
+    account_reference TEXT NOT NULL,
+    account_type TEXT NOT NULL,
+    base_currency TEXT NOT NULL,
+    initial_capital TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    updated_at REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cash_ledger (
+    cash_entry_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    entry_type TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    related_execution_id TEXT,
+    related_order_id TEXT,
+    idempotency_key TEXT,
+    correlation_id TEXT,
+    occurred_at REAL NOT NULL,
+    created_at REAL NOT NULL,
+    metadata_json TEXT,
+    FOREIGN KEY(account_id) REFERENCES paper_accounts(account_id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_ledger_execution ON cash_ledger(related_execution_id) WHERE related_execution_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_ledger_idemp ON cash_ledger(idempotency_key) WHERE idempotency_key IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS positions (
+    position_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    strategy_id TEXT,
+    symbol TEXT NOT NULL,
+    asset_class TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    net_quantity TEXT NOT NULL,
+    average_entry_price TEXT NOT NULL,
+    realized_pnl TEXT NOT NULL,
+    cumulative_fees TEXT NOT NULL,
+    last_mark_price TEXT,
+    mark_timestamp REAL,
+    market_value TEXT NOT NULL,
+    unrealized_pnl TEXT NOT NULL,
+    updated_at REAL NOT NULL,
+    UNIQUE(account_id, strategy_id, symbol, currency)
+);
+
+CREATE TABLE IF NOT EXISTS position_lots (
+    lot_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    strategy_id TEXT,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    original_quantity TEXT NOT NULL,
+    open_quantity TEXT NOT NULL,
+    entry_price TEXT NOT NULL,
+    opening_execution_id TEXT NOT NULL,
+    opened_at REAL NOT NULL,
+    closed_at REAL,
+    metadata_json TEXT
+);
 """
 
 # Valid state machine transitions

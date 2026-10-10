@@ -39,6 +39,9 @@ class BrokerGateway:
     ):
         self.db = OrderLedgerDB(db_path=db_path)
         self.reservation_service = CapitalReservationService(self.db.conn)
+        from oms_project.accounting import AccountingService
+        self.accounting = AccountingService(self.db.conn)
+        self.accounting.initialize_account("PAPER_DEFAULT")
         self.vault = VaultSecretsManager()
         self.paper_exchange = paper_exchange or PaperExchange(initial_cash=100000.0)
         self.max_gross_exposure = max_gross_exposure
@@ -107,7 +110,11 @@ class BrokerGateway:
 
     def set_market_price(self, symbol: str, price: float, timestamp: Optional[float] = None):
         self.reference_market_prices[symbol] = price
-        self.reference_market_timestamps[symbol] = timestamp if timestamp is not None else time.time()
+        ts = timestamp if timestamp is not None else time.time()
+        self.reference_market_timestamps[symbol] = ts
+        
+        from decimal import Decimal
+        self.accounting.mark_to_market("PAPER_DEFAULT", symbol, Decimal(str(price)), ts)
 
     def set_kill_switch(self, active: bool):
         self.kill_switch_active = active
@@ -626,6 +633,22 @@ class BrokerGateway:
             if new_qty == 0:
                 strat_entry[intent.symbol] = 0.0
 
+        # Update accounting
+        import uuid
+        from decimal import Decimal
+        sync_exec_id = f"sync_exec_{order_id}_{uuid.uuid4().hex[:8]}"
+        self.accounting.apply_execution(
+            account_id="PAPER_DEFAULT",
+            strategy_id=intent.strategy_id,
+            symbol=intent.symbol,
+            side=intent.side,
+            qty=Decimal(str(filled_qty)),
+            price=Decimal(str(filled_price)),
+            execution_id=sync_exec_id,
+            order_id=order_id,
+            fee=Decimal("0.0")
+        )
+
         self._notify_order_transition(order_id, intent.strategy_id, intent.symbol, intent.side.value, filled_qty, filled_price, OrderState.SUBMITTED.value, "Submitted to Exchange")
         self._notify_order_transition(order_id, intent.strategy_id, intent.symbol, intent.side.value, filled_qty, filled_price, OrderState.ACKNOWLEDGED.value, "Exchange Acknowledged")
 
@@ -848,13 +871,22 @@ class BrokerGateway:
         curr_pos = strat_pos.get(sym, 0.0)
         curr_avg = strat_entry.get(sym, price)
         
+        # Update accounting
+        from decimal import Decimal
+        self.accounting.apply_execution(
+            account_id="PAPER_DEFAULT",
+            strategy_id=strat_id,
+            symbol=sym,
+            side=side,
+            qty=Decimal(str(qty)),
+            price=Decimal(str(price)),
+            execution_id=execution_id,
+            order_id=order_id,
+            fee=Decimal("0.0")
+        )
+        
         if side == OrderSide.BUY:
-            # Release proportional reserved risk
-            # In a real system we'd calculate exactly how much was reserved for THIS qty, but for now we release all if it's the first fill or proportional
             if current_state in [OrderState.RISK_RESERVED, OrderState.SUBMITTED, OrderState.SUBMISSION_UNKNOWN, OrderState.ACKNOWLEDGED]:
-                # If first fill, we might release the entire reservation and rely on cash balance, or keep it.
-                # Actually, our simplified model deducts from reserved and applies to positions.
-                # Let's just deduct cost from reserved if we have any reserved, else from cash.
                 cost = qty * price
                 if self.strategy_reserved.get(strat_id, 0.0) >= cost:
                     self.strategy_reserved[strat_id] -= cost

@@ -1,6 +1,7 @@
 
 ## [Unreleased]
 ### Added
+- GAP-08: Implemented fully deterministic, Decimal-based virtual paper portfolio accounting layer (cash ledger, lots, fees, realized/unrealized P&L) isolated inside the OMS sandbox.
 - GAP-03: Hardened handling for order submission and cancellation timeouts (T05 and T10), preserving capital reservation, risk exposure, and implementing durable broker uncertainty records.
 Implemented Intraday Decision Engine with strict safety boundaries and market regime classifications.
 

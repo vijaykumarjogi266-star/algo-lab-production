@@ -12,7 +12,7 @@
   `ALLOW_REAL_BROKER_EXECUTION=false`
 - **Broker Safety**: No broker-connected paper or real trading is enabled.
 - **Remaining P0 Work**: Reconciliation (T28 and T30).
-- **Remaining Major Implementation Work**: Durable accounting/P&L, historical replay/internal paper-exchange expansion, and Zerodha read-only/shadow work.
+- **Remaining Major Implementation Work**: Historical replay/internal paper-exchange expansion, and Zerodha read-only/shadow work.
 
 ## Safety Rules
 All future work must occur only in the canonical repository.
