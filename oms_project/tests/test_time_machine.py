@@ -67,7 +67,7 @@ def test_simulation_lock_blocks_external_calls():
     with pytest.raises(PermissionError) as exc_info:
         gateway.execute_external_broker_api_call("https://api.broker.com/v1/orders", {"order": "test"})
 
-    assert "SIMULATION_LOCK_ACTIVE" in str(exc_info.value)
+    assert "permanently disabled in Algo Lab" in str(exc_info.value)
 
 
 def test_slippage_engine_buy_and_sell():

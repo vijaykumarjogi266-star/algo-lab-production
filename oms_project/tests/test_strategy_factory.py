@@ -91,7 +91,8 @@ def test_sim_lock_security_guard(monkeypatch):
     """Verifies that Sim-Lock blocks fast-tests if ALLOW_LIVE_TRADING is set to True."""
     monkeypatch.setenv("ALLOW_LIVE_TRADING", "True")
     config = {"strategy_id": "STRAT_TEST", "strategy_type": "mean_reversion"}
-    with pytest.raises(RuntimeError, match="SIM-LOCK SECURITY VIOLATION"):
+    from oms_project.gateway import SafetyViolationError
+    with pytest.raises(SafetyViolationError, match="CRITICAL: ALLOW_LIVE_TRADING must be 'false'"):
         FastTestEngine.run_fast_test(config)
 
 

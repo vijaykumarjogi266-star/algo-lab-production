@@ -15,6 +15,10 @@ from oms_project.paper_exchange import PaperExchange
 from oms_project.reservation_service import CapitalReservationService, ReservationOutcome
 
 
+class SafetyViolationError(Exception):
+    pass
+
+
 class VaultSecretsManager:
     """Simulates Vault Secrets Manager issuing short-lived signing tokens."""
     def get_exchange_signing_token(self, strategy_id: str) -> str:
@@ -53,6 +57,34 @@ class BrokerGateway:
         self.simulation_mode = simulation_mode
         self.slippage_bps = slippage_bps
         self.latency_ms = latency_ms
+        # --- FAIL-CLOSED SAFETY VALIDATION ---
+        import os
+        
+        trading_mode = os.environ.get("TRADING_MODE")
+        if trading_mode != "READ_ONLY":
+            raise SafetyViolationError(f"CRITICAL: TRADING_MODE must be READ_ONLY. Got {trading_mode}")
+            
+        allow_live = os.environ.get("ALLOW_LIVE_TRADING")
+        if allow_live != "false":
+            raise SafetyViolationError(f"CRITICAL: ALLOW_LIVE_TRADING must be 'false'. Got {allow_live}")
+            
+        real_money = os.environ.get("REAL_MONEY_RISK_PAISE")
+        if real_money != "0":
+            raise SafetyViolationError(f"CRITICAL: REAL_MONEY_RISK_PAISE must be '0'. Got {real_money}")
+            
+        paper_only = os.environ.get("PAPER_BROKER_ONLY")
+        if paper_only != "true":
+            raise SafetyViolationError(f"CRITICAL: PAPER_BROKER_ONLY must be 'true'. Got {paper_only}")
+            
+        order_sub = os.environ.get("ORDER_SUBMISSION_ENABLED")
+        if order_sub != "false":
+            raise SafetyViolationError(f"CRITICAL: ORDER_SUBMISSION_ENABLED must be 'false'. Got {order_sub}")
+            
+        allow_real = os.environ.get("ALLOW_REAL_BROKER_EXECUTION")
+        if allow_real != "false":
+            raise SafetyViolationError(f"CRITICAL: ALLOW_REAL_BROKER_EXECUTION must be 'false'. Got {allow_real}")
+        # ---------------------------------------
+
 
         # State stores (In-Memory Redis equivalents for fast testing and isolation)
         self.idempotency_cache: Dict[str, Dict[str, Any]] = {}
@@ -132,6 +164,34 @@ class BrokerGateway:
         self.simulation_mode = True
         self.slippage_bps = slippage_bps
         self.latency_ms = latency_ms
+        # --- FAIL-CLOSED SAFETY VALIDATION ---
+        import os
+        
+        trading_mode = os.environ.get("TRADING_MODE")
+        if trading_mode != "READ_ONLY":
+            raise SafetyViolationError(f"CRITICAL: TRADING_MODE must be READ_ONLY. Got {trading_mode}")
+            
+        allow_live = os.environ.get("ALLOW_LIVE_TRADING")
+        if allow_live != "false":
+            raise SafetyViolationError(f"CRITICAL: ALLOW_LIVE_TRADING must be 'false'. Got {allow_live}")
+            
+        real_money = os.environ.get("REAL_MONEY_RISK_PAISE")
+        if real_money != "0":
+            raise SafetyViolationError(f"CRITICAL: REAL_MONEY_RISK_PAISE must be '0'. Got {real_money}")
+            
+        paper_only = os.environ.get("PAPER_BROKER_ONLY")
+        if paper_only != "true":
+            raise SafetyViolationError(f"CRITICAL: PAPER_BROKER_ONLY must be 'true'. Got {paper_only}")
+            
+        order_sub = os.environ.get("ORDER_SUBMISSION_ENABLED")
+        if order_sub != "false":
+            raise SafetyViolationError(f"CRITICAL: ORDER_SUBMISSION_ENABLED must be 'false'. Got {order_sub}")
+            
+        allow_real = os.environ.get("ALLOW_REAL_BROKER_EXECUTION")
+        if allow_real != "false":
+            raise SafetyViolationError(f"CRITICAL: ALLOW_REAL_BROKER_EXECUTION must be 'false'. Got {allow_real}")
+        # ---------------------------------------
+
 
     def disable_simulation_mode(self):
         self.simulation_mode = False
@@ -459,10 +519,8 @@ class BrokerGateway:
         return flatten_results
 
     def execute_external_broker_api_call(self, endpoint: str, payload: Dict[str, Any]):
-        """Simulates external exchange API invocation. Blocks calls when SIMULATION_MODE=True."""
-        if self.simulation_mode:
-            raise PermissionError("SIMULATION_LOCK_ACTIVE: Direct outbound calls to external broker API are physically blocked in Simulation Mode!")
-        return {"status": "SUCCESS", "endpoint": endpoint}
+        """Simulates external exchange API invocation. UNCONDITIONALLY BLOCKED in Algo Lab."""
+        raise PermissionError("CRITICAL: External broker execution permanently disabled in Algo Lab.")
 
     # Primary Order Execution Pipeline
     def process_order_intent(self, intent: OrderIntent, simulate_network_failure: bool = False) -> OrderResult:
