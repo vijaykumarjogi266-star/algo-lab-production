@@ -122,6 +122,16 @@ class ReconciliationService:
     def resolve_break(self, break_id: str, evidence: str, rationale: str = "", new_status: BreakStatus = BreakStatus.RESOLVED):
         if new_status not in (BreakStatus.RESOLVED, BreakStatus.ACCEPTED_ADJUSTMENT, BreakStatus.FALSE_POSITIVE):
             raise ValueError(f"Invalid terminal status for break resolution: {new_status}")
+            
+        if not evidence or not evidence.strip():
+            raise ValueError("evidence_reference must not be empty")
+            
+        cur = self.db.execute("SELECT severity FROM reconciliation_breaks WHERE break_id=?", (break_id,))
+        row = cur.fetchone()
+        if row and row["severity"] in ("MATERIAL", "CRITICAL"):
+            if not rationale or not rationale.strip():
+                raise ValueError("operator_rationale must not be empty for MATERIAL/CRITICAL breaks")
+
         with self.db:
             self.db.execute(
                 "UPDATE reconciliation_breaks SET status=?, resolved_at=?, evidence_reference=?, operator_rationale=? WHERE break_id=? AND status IN ('OPEN', 'INVESTIGATING')",
@@ -175,9 +185,10 @@ class ReconciliationService:
         if account_snap.cash_balance is None:
             return
             
-        cur = self.db.execute("SELECT SUM(CAST(amount AS REAL)) as total FROM cash_ledger WHERE account_id=?", (account_id,))
-        row = cur.fetchone()
-        internal_cash = Decimal(str(row["total"] or "0.0"))
+        cur = self.db.execute("SELECT amount FROM cash_ledger WHERE account_id=?", (account_id,))
+        internal_cash = Decimal("0.0")
+        for row in cur.fetchall():
+            internal_cash += Decimal(row["amount"])
         
         if internal_cash != account_snap.cash_balance:
             self._record_break(
@@ -258,13 +269,14 @@ class ReconciliationService:
             else:
                 if ex.fee is not None:
                     cur_fee = self.db.execute(
-                        "SELECT SUM(CAST(amount AS REAL)) as total_fee FROM cash_ledger WHERE entry_type='FEE' AND related_execution_id=?",
+                        "SELECT amount FROM cash_ledger WHERE entry_type='FEE' AND related_execution_id=?",
                         (f"fee_{ex.external_execution_id}",)
                     )
-                    row_fee = cur_fee.fetchone()
+                    internal_fee = Decimal("0.0")
+                    for row_fee in cur_fee.fetchall():
+                        internal_fee += Decimal(row_fee["amount"])
                     
                     # Internal fees are stored as negative numbers
-                    internal_fee = Decimal(str(row_fee["total_fee"] or "0.0"))
                     internal_fee_abs = abs(internal_fee)
                     external_fee = abs(ex.fee)
                     

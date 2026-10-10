@@ -211,6 +211,6 @@ def test_entry_block_clears_only_after_all_material_breaks_resolve(gw):
     
     for i, b in enumerate(material_breaks):
         gw.db.conn.execute("UPDATE reconciliation_breaks SET status='INVESTIGATING' WHERE break_id=?", (b["break_id"],))
-        gw.reconciliation.resolve_break(b["break_id"], f"Ev{i}", new_status=BreakStatus.RESOLVED)
+        gw.reconciliation.resolve_break(b["break_id"], f"Ev{i}", rationale=f"Rat{i}", new_status=BreakStatus.RESOLVED)
         
     assert gw.reconciliation.can_accept_new_entries("PAPER_DEFAULT") is True
