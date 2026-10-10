@@ -17,3 +17,9 @@ Algo Lab requires a durable integrity layer (GAP-07 / T28 / T30) to reconcile th
 - Guaranteed preservation of internal truth in the event of missing or out-of-order execution webhooks.
 - New entries are securely blocked upon material drift.
 - Strong audit trail.
+
+### Follow-Up Implementations (GAP-07)
+- **Fee Mismatch**: Implemented direct comparison between external fee evidence and internal durable cash ledger fee entries.
+- **Order Status Mismatch**: Added targeted comparisons for order states (e.g., external OPEN vs internal CANCELLED), raising MATERIAL or WARNING breaks based on discrepancy severity.
+- **Restart Persistence**: Validated that unresolved material reconciliation breaks persist across restarts and continue to block new entries.
+- **Entry Block Release Policy**: System blocks new entries as long as any MATERIAL or CRITICAL breaks remain in OPEN or INVESTIGATING states, and clears automatically when resolved.

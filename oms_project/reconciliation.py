@@ -107,7 +107,7 @@ class ReconciliationService:
 
     def can_accept_new_entries(self, account_id: str) -> bool:
         cur = self.db.execute(
-            "SELECT count(*) as c FROM reconciliation_breaks WHERE account_id=? AND status='OPEN' AND severity IN ('MATERIAL', 'CRITICAL')",
+            "SELECT count(*) as c FROM reconciliation_breaks WHERE account_id=? AND status IN ('OPEN', 'INVESTIGATING') AND severity IN ('MATERIAL', 'CRITICAL')",
             (account_id,)
         )
         row = cur.fetchone()
@@ -116,14 +116,16 @@ class ReconciliationService:
         return True
 
     def get_open_breaks(self, account_id: str) -> List[Dict[str, Any]]:
-        cur = self.db.execute("SELECT * FROM reconciliation_breaks WHERE account_id=? AND status='OPEN'", (account_id,))
+        cur = self.db.execute("SELECT * FROM reconciliation_breaks WHERE account_id=? AND status IN ('OPEN', 'INVESTIGATING')", (account_id,))
         return [dict(row) for row in cur.fetchall()]
 
-    def resolve_break(self, break_id: str, evidence: str, rationale: str = ""):
+    def resolve_break(self, break_id: str, evidence: str, rationale: str = "", new_status: BreakStatus = BreakStatus.RESOLVED):
+        if new_status not in (BreakStatus.RESOLVED, BreakStatus.ACCEPTED_ADJUSTMENT, BreakStatus.FALSE_POSITIVE):
+            raise ValueError(f"Invalid terminal status for break resolution: {new_status}")
         with self.db:
             self.db.execute(
-                "UPDATE reconciliation_breaks SET status='RESOLVED', resolved_at=?, evidence_reference=?, operator_rationale=? WHERE break_id=? AND status='OPEN'",
-                (time.time(), evidence, rationale, break_id)
+                "UPDATE reconciliation_breaks SET status=?, resolved_at=?, evidence_reference=?, operator_rationale=? WHERE break_id=? AND status IN ('OPEN', 'INVESTIGATING')",
+                (new_status.value, time.time(), evidence, rationale, break_id)
             )
 
     def reconcile_account(self, account_id: str, snapshot: ReconciliationSnapshot) -> str:
@@ -156,6 +158,14 @@ class ReconciliationService:
             return run_id
 
     def _record_break(self, run_id: str, account_id: str, provider: str, b_type: BreakType, sev: BreakSeverity, exp: str, obs: str, symbol: str = None, ext_ref: str = None, int_ref: str = None):
+        # Prevent identical open breaks
+        cur = self.db.execute(
+            "SELECT break_id FROM reconciliation_breaks WHERE account_id=? AND break_type=? AND external_reference=? AND expected_value=? AND observed_value=? AND status IN ('OPEN', 'INVESTIGATING')",
+            (account_id, b_type.value, ext_ref, exp, obs)
+        )
+        if cur.fetchone():
+            return
+            
         self.db.execute(
             "INSERT INTO reconciliation_breaks (break_id, reconciliation_run_id, account_id, provider, break_type, severity, expected_value, observed_value, symbol, external_reference, internal_reference, status, detected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (str(uuid.uuid4()), run_id, account_id, provider, b_type.value, sev.value, exp, obs, symbol, ext_ref, int_ref, "OPEN", time.time())
@@ -212,10 +222,27 @@ class ReconciliationService:
                 )
             else:
                 int_state = row["state"]
-                # A simplified check: if external is FILLED and internal is not
-                if eo.status == "FILLED" and int_state != "FILLED":
+                if eo.status != int_state:
+                    # Specific material checks
+                    # external OPEN versus internal CANCELLED
+                    # external CANCELLED versus internal LIVE
+                    # external REJECTED versus internal active state
+                    # external FILLED versus internal LIVE/PARTIALLY_FILLED
+                    
+                    is_material = False
+                    if eo.status == "OPEN" and int_state == "CANCELLED":
+                        is_material = True
+                    elif eo.status == "CANCELLED" and int_state in ("OPEN", "PENDING", "LIVE", "PARTIALLY_FILLED"):
+                        is_material = True
+                    elif eo.status == "REJECTED" and int_state in ("OPEN", "PENDING", "LIVE", "PARTIALLY_FILLED"):
+                        is_material = True
+                    elif eo.status == "FILLED" and int_state in ("OPEN", "PENDING", "LIVE", "PARTIALLY_FILLED"):
+                        is_material = True
+                        
+                    sev = BreakSeverity.MATERIAL if is_material else BreakSeverity.WARNING
+                    
                     self._record_break(
-                        run_id, account_id, eo.provider, BreakType.ORDER_STATUS_MISMATCH, BreakSeverity.WARNING,
+                        run_id, account_id, eo.provider, BreakType.ORDER_STATUS_MISMATCH, sev,
                         int_state, eo.status, symbol=eo.symbol, ext_ref=eo.external_order_id, int_ref=eo.internal_order_id
                     )
 
@@ -228,3 +255,21 @@ class ReconciliationService:
                     run_id, account_id, ex.provider, BreakType.MISSING_EXECUTION_EVIDENCE, BreakSeverity.MATERIAL,
                     "None", ex.external_execution_id, symbol=ex.symbol, ext_ref=ex.external_execution_id, int_ref=ex.internal_order_id
                 )
+            else:
+                if ex.fee is not None:
+                    cur_fee = self.db.execute(
+                        "SELECT SUM(CAST(amount AS REAL)) as total_fee FROM cash_ledger WHERE entry_type='FEE' AND related_execution_id=?",
+                        (f"fee_{ex.external_execution_id}",)
+                    )
+                    row_fee = cur_fee.fetchone()
+                    
+                    # Internal fees are stored as negative numbers
+                    internal_fee = Decimal(str(row_fee["total_fee"] or "0.0"))
+                    internal_fee_abs = abs(internal_fee)
+                    external_fee = abs(ex.fee)
+                    
+                    if internal_fee_abs != external_fee:
+                        self._record_break(
+                            run_id, account_id, ex.provider, BreakType.FEE_MISMATCH, BreakSeverity.MATERIAL,
+                            str(internal_fee_abs), str(external_fee), symbol=ex.symbol, ext_ref=ex.external_execution_id, int_ref=ex.internal_order_id
+                        )

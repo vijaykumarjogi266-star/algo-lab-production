@@ -4,3 +4,8 @@
 - **T30:** Explicit handling for `MISSING_EXECUTION_EVIDENCE` preserving the ledger exactly.
 - **Entry Block Mechanism:** New entries successfully halt via `RECONCILIATION_HOLD_NEW_ENTRIES_BLOCKED` without preventing reduce-only shutdown operations.
 - **Test Metrics:** 106 tests passed successfully. T15 stress passed exactly 20 independent iterative runs without isolation locks.
+
+## Follow-Up GAP-07 Tests
+Focused tests for fee mismatch, order-status mismatch, restart persistence, and entry-block logic were run and passed successfully.
+Total suite count: 117 tests passed.
+Concurrent stress test (20 runs): Passed.

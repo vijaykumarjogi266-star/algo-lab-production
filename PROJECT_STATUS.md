@@ -1,7 +1,7 @@
 # Project Status
 
 - **Proposed Canonical Root**: `/home/ubuntu/algolab` (canonical repository remains `/home/ubuntu/algolab`)
-- **Verified OMS Suite Result**: `90 passed, 2 warnings`
+- **Verified OMS Suite Result**: `117 passed, 2 warnings`
 - **Verified Components**: T06, T08, T09, T15, T05, T10, T18, T19, and T20 are verified.
 - **GAP-05 Status**: GAP-05 safe shutdown and recovery is resolved.
 - **Shutdown Semantics**: Shutdown blocks new entries but preserves execution ingestion. Restart restores durable shutdown state and continues blocking entries until recovery/reconciliation requirements are met.
@@ -26,3 +26,5 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Intraday Market Regime and Strategy policy engine implemented.
 - Fully separated boundary from execution/OMS logic.
 - Safe by default; issues HALT and NO_TRADE upon uncertainty.
+
+- **GAP-07 / T28 / T30**: Resolved. Fee, order status mismatches, restart persistence, and material entry blocks implemented and verified.
