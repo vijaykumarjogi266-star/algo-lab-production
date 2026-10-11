@@ -218,6 +218,51 @@ CREATE TABLE IF NOT EXISTS reconciliation_breaks (
     metadata_json TEXT,
     FOREIGN KEY(reconciliation_run_id) REFERENCES reconciliation_runs(reconciliation_run_id)
 );
+
+CREATE TABLE IF NOT EXISTS dataset_registry (
+    dataset_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    source TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    acquisition_date TEXT NOT NULL,
+    symbols_json TEXT NOT NULL,
+    market TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    start_timestamp REAL NOT NULL,
+    end_timestamp REAL NOT NULL,
+    record_count INTEGER NOT NULL,
+    schema_version TEXT NOT NULL,
+    sha256_checksum TEXT NOT NULL,
+    quality_status TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    updated_at REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS dataset_quality_reports (
+    report_id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL,
+    validated_at REAL NOT NULL,
+    is_valid INTEGER NOT NULL,
+    error_count INTEGER NOT NULL,
+    warning_count INTEGER NOT NULL,
+    details_json TEXT NOT NULL,
+    FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
+);
+
+CREATE TABLE IF NOT EXISTS replay_runs (
+    replay_run_id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL,
+    dataset_version TEXT NOT NULL,
+    dataset_checksum TEXT NOT NULL,
+    configuration_hash TEXT NOT NULL,
+    started_at REAL NOT NULL,
+    completed_at REAL,
+    status TEXT NOT NULL,
+    metadata_json TEXT,
+    FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
+);
 """
 
 # Valid state machine transitions

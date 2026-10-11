@@ -11,3 +11,10 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 ## Reconciliation (GAP-07 Updates)
 - Added continuous checks for fee mismatches and order status mismatches.
 - Hardened the material entry block to dynamically cover INVESTIGATING states and clear only upon acceptable terminal resolution.
+
+## Historical Data Integrity & Provenance (Stage 1)
+- Built `HistoricalDataRegistry` backed by SQLite tables `dataset_registry`, `dataset_quality_reports`, and `replay_runs`.
+- Cryptographic SHA256 checksums calculated upon registration and re-verified before any replay invocation.
+- Tamper detection triggers automatic dataset quarantine (`QUARANTINED`) and blocks replay via `ChecksumMismatchError`.
+- Integrated `DataValidator` enforcing monotonic timestamps, duplicate detection, valid prices/volumes, and IANA timezone validation.
+- Every replay execution is immutably linked to dataset ID, dataset version, checksum, and configuration hash.

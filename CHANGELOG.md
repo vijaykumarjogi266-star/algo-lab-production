@@ -1,6 +1,10 @@
 
 ## [Unreleased]
 ### Added
+- Stage 1: Implemented `HistoricalDataRegistry` and `DataValidator` enforcing immutable dataset provenance, cryptographic SHA256 checksums, and fail-closed replay boundaries.
+- Stage 1: Added schema tables `dataset_registry`, `dataset_quality_reports`, and `replay_runs` to SQLite database.
+- Stage 1: Integrated tamper-detection into `HistoricalReplayEngine.load_verified_dataset`, automatically quarantining corrupted files and preventing replay.
+- Stage 1: Added comprehensive validation suite in `oms_project/tests/test_data_integrity.py` asserting checksum enforcement, duplicate/out-of-order detection, timezone validation, and restart survival.
 - GAP-07 (T28/T30): Built deterministic ReconciliationService to safely halt entries if external broker evidence conflicts with internal ledgers, preserving internal truth.
 - GAP-08: Implemented fully deterministic, Decimal-based virtual paper portfolio accounting layer (cash ledger, lots, fees, realized/unrealized P&L) isolated inside the OMS sandbox.
 - GAP-03: Hardened handling for order submission and cancellation timeouts (T05 and T10), preserving capital reservation, risk exposure, and implementing durable broker uncertainty records.

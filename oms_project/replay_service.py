@@ -81,6 +81,27 @@ class HistoricalReplayEngine:
         self.ticks = ticks
         self.processed_count = 0
 
+    def load_verified_dataset(
+        self,
+        registry,
+        dataset_id: str,
+        configuration: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Loads dataset with cryptographic integrity verification against the registry.
+        Creates a registered replay run token. Fails closed if the dataset is altered or quarantined.
+        """
+        metadata = registry.verify_integrity(dataset_id)
+        replay_run_id = registry.create_replay_run(
+            dataset_id=dataset_id,
+            configuration=configuration or {"mode": "replay_sync"},
+        )
+        self.replay_run_id = replay_run_id
+        self.dataset_id = dataset_id
+        self.dataset_checksum = metadata.sha256_checksum
+        self.load_csv(metadata.file_path)
+        return replay_run_id
+
     def replay_ticks_sync(
         self,
         on_tick_callback: Optional[Callable[[NormalizedTick], None]] = None,
