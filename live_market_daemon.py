@@ -1,5 +1,5 @@
-import yfinance as yf
 #!/usr/bin/env python3
+import yfinance as yf
 """
 Institutional Live Market Daemon for Indian Equities (NSE/BSE).
 Upgraded for ZERO HUMAN INTERVENTION & END-OF-DAY (EOD) SWING TRADING (DELIVERY/CNC).
