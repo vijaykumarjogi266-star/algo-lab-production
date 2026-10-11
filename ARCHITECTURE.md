@@ -26,3 +26,16 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Dynamic market regime detection classifying trend, range, volatility, liquidity, session window, and degraded data.
 - Regime-aware gating blocking new entries during non-permitted market conditions.
 - Durable `replay_execution_reports` persisting P&L, drawdown, turnover, fees, slippage, and regime breakdown.
+
+## Internal Paper Exchange & Execution Realism (Stage 3)
+- Implemented `OrderType` (`MARKET`, `LIMIT`) with order book resting state and matching mechanics.
+- `PaperExchange` incorporates `AdverseExecutionProfile` modeling:
+  - Bid/ask spread expansion (`base_spread_bps`).
+  - Linear/quadratic slippage factors proportional to trade size and participation rate.
+  - Indian equity fee schedules (bps turnover + fixed per-order ticket fees).
+  - Liquidity caps enforcing maximum participation of bar/tick volume.
+  - Partial fill (`PARTIAL`) and no-fill/rejection (`NO_FILL`) modes simulating adverse liquidity.
+  - Unfunded reduce-only rejection safeguards.
+- Intraday session close handler (`on_session_close`) auto-cancelling open resting orders.
+- Sensitivity matrix generation evaluating trade outcomes across multi-dimensional spread and slippage grids.
+- Gateway level risk reservation release on exchange-level rejections to eliminate phantom capital reservation.

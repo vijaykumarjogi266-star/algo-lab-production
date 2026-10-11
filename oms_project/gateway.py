@@ -145,6 +145,8 @@ class BrokerGateway:
 
     def set_market_price(self, symbol: str, price: float, timestamp: Optional[float] = None):
         self.reference_market_prices[symbol] = price
+        if hasattr(self.paper_exchange, "market_prices"):
+            self.paper_exchange.market_prices[symbol.upper()] = price
         ts = timestamp if timestamp is not None else time.time()
         self.reference_market_timestamps[symbol] = ts
         
@@ -654,6 +656,11 @@ class BrokerGateway:
         self.db.transition_state(order_id, OrderState.ACKNOWLEDGED, "Exchange Acknowledged Order")
 
         # Forward order to Paper Exchange
+        order_type_str = getattr(intent, "order_type", "MARKET")
+        if hasattr(order_type_str, "value"):
+            order_type_str = order_type_str.value
+        reduce_only_flag = getattr(intent, "reduce_only", False)
+
         exch_res = self.paper_exchange.execute_order(
             strategy_id=intent.strategy_id,
             symbol=intent.symbol,
@@ -662,10 +669,31 @@ class BrokerGateway:
             price=exec_price,
             signing_token=signing_token,
             broker_order_id=order_id,
+            order_type=order_type_str,
+            reduce_only=reduce_only_flag,
         )
+
+        if exch_res.get("status") == "RESTING":
+            self.db.transition_state(order_id, OrderState.LIVE, "Limit Order Resting in Exchange Book", reserved_value=reserved_val)
+            res = OrderResult(
+                request_id=intent.request_id,
+                order_id=order_id,
+                strategy_id=intent.strategy_id,
+                symbol=intent.symbol,
+                side=intent.side.value,
+                qty=effective_qty,
+                price=exec_price,
+                status=OrderState.LIVE,
+                message="LIMIT_ORDER_RESTING_IN_BOOK",
+                reserved_value=reserved_val,
+            )
+            self.idempotency_cache[intent.request_id] = res.model_dump()
+            return res
 
         if not exch_res.get("success"):
             reason = exch_res.get("reason", "EXCHANGE_REJECTED")
+            if intent.side == OrderSide.BUY:
+                self.strategy_reserved[intent.strategy_id] = max(0.0, self.strategy_reserved.get(intent.strategy_id, 0.0) - reserved_val)
             self.db.transition_state(order_id, OrderState.REJECTED, reason)
             res = OrderResult(
                 request_id=intent.request_id,

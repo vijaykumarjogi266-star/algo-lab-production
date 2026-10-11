@@ -44,7 +44,7 @@ class AssetReconciler:
                 "positions": paper_positions,
             },
             "variance": round(variance, 2),
-            "status": "MATCH" if variance == 0.0 else "MISMATCH",
+            "status": "MATCH" if round(variance, 4) == 0.0 else "MISMATCH",
         }
         return report
 

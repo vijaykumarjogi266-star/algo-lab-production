@@ -44,6 +44,11 @@ class OrderState(str, Enum):
     ACKNOWLEDGED = "ACKNOWLEDGED"
 
 
+class OrderType(str, Enum):
+    MARKET = "MARKET"
+    LIMIT = "LIMIT"
+
+
 class OrderIntent(BaseModel):
     request_id: str = Field(..., description="Unique Request ID for idempotency")
     strategy_id: str = Field(..., description="Target Strategy Identifier")
@@ -51,6 +56,7 @@ class OrderIntent(BaseModel):
     side: OrderSide = Field(..., description="Order Side: BUY or SELL")
     qty: float = Field(..., gt=0, description="Order Quantity")
     price: float = Field(..., gt=0, description="Order Price")
+    order_type: OrderType = Field(default=OrderType.MARKET, description="Order Type: MARKET or LIMIT")
     reduce_only: bool = Field(default=False, description="Whether this is a reduce-only closing order")
     timestamp: float = Field(default_factory=time.time, description="Client creation timestamp")
     expiry: float = Field(default_factory=lambda: time.time() + 30.0, description="Order Expiry timestamp")

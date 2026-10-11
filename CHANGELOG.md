@@ -1,6 +1,9 @@
 
 ## [Unreleased]
 ### Added
+- Stage 3: Enhanced `PaperExchange` with `AdverseExecutionProfile` modeling bid/ask limit books, queue priority matching, non-linear slippage, fee schedules, liquidity caps, partial/no-fill modes, EOD session-end auto-cancellations, and sensitivity matrix generation.
+- Stage 3: Updated `BrokerGateway` to support `OrderType.LIMIT` with resting state and release reserved capital on exchange rejection.
+- Stage 3: Added dedicated test suite `oms_project/tests/test_paper_exchange_realism.py` (8 tests passing, regression suite at 149 tests).
 - Stage 2: Implemented `ReplayClock` with monotonic clock advancement and session awareness (`Asia/Kolkata` trading hours).
 - Stage 2: Built `BoundedEventStream` and `LookAheadBiasError` enforcing strict look-ahead protection with multi-symbol synchronization.
 - Stage 2: Added `RegimeEvaluator` classifying market regimes (trend, range, volatility, liquidity, session window, degraded data) and gating decisions.

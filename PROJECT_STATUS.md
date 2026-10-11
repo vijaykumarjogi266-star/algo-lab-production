@@ -1,8 +1,8 @@
 # Project Status
 
 - **Proposed Canonical Root**: `/home/ubuntu/algolab` (canonical repository remains `/home/ubuntu/algolab`)
-- **Verified OMS Suite Result**: `141 passed, 2 warnings`
-- **Verified Components**: T06, T08, T09, T15, T05, T10, T18, T19, T20, Stage 1 Data Integrity, and Stage 2 Deterministic Replay are verified.
+- **Verified OMS Suite Result**: `149 passed, 2 warnings`
+- **Verified Components**: T06, T08, T09, T15, T05, T10, T18, T19, T20, Stage 1 Data Integrity, Stage 2 Deterministic Replay, and Stage 3 Internal Paper Exchange Realism are verified.
 - **GAP-05 Status**: GAP-05 safe shutdown and recovery is resolved.
 - **Shutdown Semantics**: Shutdown blocks new entries but preserves execution ingestion. Restart restores durable shutdown state and continues blocking entries until recovery/reconciliation requirements are met.
 - **Trading Mode**:
@@ -13,8 +13,9 @@
 - **Broker Safety**: No broker-connected paper or real trading is enabled.
 - **Stage 1 (Historical Data Integrity & Provenance)**: RESOLVED. Cryptographic checksum verification, SQLite dataset registry, and fail-closed replay controls verified.
 - **Stage 2 (Deterministic Historical Replay & Regime Evaluation)**: RESOLVED. ReplayClock, BoundedEventStream look-ahead protection, multi-symbol synchronization, regime classification, and durable replay reports verified.
-- **Remaining P0 Work**: None. Core safety features, data integrity, and deterministic replay foundation complete.
-- **Remaining Major Implementation Work**: Stage 3 (Internal Paper Exchange and Execution Realism).
+- **Stage 3 (Internal Paper Exchange & Execution Realism)**: RESOLVED. Limit order books, queue priority, adverse execution profiles, liquidity caps, partial/no-fill modes, slippage/fee schedules, EOD session-end cancel, and sensitivity matrix analysis verified.
+- **Remaining P0 Work**: None. Core safety features, data integrity, replay, and paper exchange realism foundation complete.
+- **Remaining Major Implementation Work**: Stage 4 (Decision Engine, Candidate Intents, and Controlled Market Adaptability).
 
 ## Safety Rules
 All future work must occur only in the canonical repository.
