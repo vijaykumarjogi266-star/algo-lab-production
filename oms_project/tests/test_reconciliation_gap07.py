@@ -183,13 +183,9 @@ def test_material_break_persists_after_restart_and_blocks_entry(tmp_path):
     
     # Try submit
     req = OrderIntent(request_id="R1", symbol="RELIANCE", side=OrderSide.BUY, qty=10.0, price=100.0, account_id="PAPER_DEFAULT", strategy_id="S1", signature="sig")
-    with pytest.raises(Exception) as exc:
-        gw2.submit_order(req)
-    # The gateway usually checks can_accept_new_entries or similar
-    # Let's ensure the message matches expectation
-    
-    # Wait, the exact exception might be "RuntimeError: Safety block: Reconciliation breaks prevent new entries" or similar.
-    # Let's not assert exact string if we don't know it yet, just ensure it raises Exception.
+    res = gw2.process_order_intent(req)
+    assert res.status == OrderState.REJECTED
+    assert res.message == "RECONCILIATION_HOLD_NEW_ENTRIES_BLOCKED"
 
 def test_entry_block_clears_only_after_all_material_breaks_resolve(gw):
     # Setup multiple material breaks

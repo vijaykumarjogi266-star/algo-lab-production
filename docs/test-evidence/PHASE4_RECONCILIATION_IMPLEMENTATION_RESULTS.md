@@ -7,5 +7,5 @@
 
 ## Follow-Up GAP-07 Tests
 Focused tests for fee mismatch, order-status mismatch, restart persistence, and entry-block logic were run and passed successfully.
-Total suite count: 117 tests passed.
-Concurrent stress test (20 runs): Passed.
+Total suite count: 125 tests passed, 2 warnings.
+Concurrent stress test (20 runs): Passed (all 20 iterations green, 71s duration).

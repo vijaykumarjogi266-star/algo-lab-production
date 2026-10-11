@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS cash_ledger (
     metadata_json TEXT,
     FOREIGN KEY(account_id) REFERENCES paper_accounts(account_id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_ledger_execution ON cash_ledger(related_execution_id) WHERE related_execution_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cash_ledger_execution ON cash_ledger(related_execution_id) WHERE related_execution_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cash_ledger_idemp ON cash_ledger(idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS positions (

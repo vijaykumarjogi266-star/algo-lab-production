@@ -27,4 +27,4 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Fully separated boundary from execution/OMS logic.
 - Safe by default; issues HALT and NO_TRADE upon uncertainty.
 
-- **GAP-07 / T28 / T30**: Resolved. Fee, order status mismatches, restart persistence, and material entry blocks implemented and verified.
+- **GAP-07 / T28 / T30**: RESOLVED. Fee, order status mismatches, restart persistence, and material entry blocks implemented and verified.
