@@ -39,3 +39,14 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Intraday session close handler (`on_session_close`) auto-cancelling open resting orders.
 - Sensitivity matrix generation evaluating trade outcomes across multi-dimensional spread and slippage grids.
 - Gateway level risk reservation release on exchange-level rejections to eliminate phantom capital reservation.
+
+## Decision Engine, Candidate Intents & Market Adaptability (Stage 4)
+- Formalized `CandidateIntent` lifecycle (`CANDIDATE` -> `RISK_APPROVED` -> `SIZED` -> `DISPATCHED`).
+- Complete separation between alpha strategies (proposing candidate intents) and execution routing.
+- Immutable transition audit trails with timestamps, rationales, and metadata.
+- `ProfileTransitionManager` managing adaptation profiles (`TRENDING`, `CHOPPY`, `HIGH_VOLATILITY`, `LOW_LIQUIDITY`, `DEGRADED_DATA`, `NORMAL`):
+  - Confirmation threshold preventing whipsaws from temporary market noise.
+  - Emergency fail-closed escalation into `DEGRADED_DATA` and `HIGH_VOLATILITY`.
+  - Hysteresis cooldown suppressing premature de-escalation from adverse regimes.
+- Adaptive risk sizing: volatility downscaling, liquidity participation caps, and fail-closed `DEGRADED_DATA` entry blocks.
+- End-to-end integration across Stage 2 ReplayClock/RegimeEvaluator and Stage 3 PaperExchange.

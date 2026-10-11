@@ -1,6 +1,10 @@
 
 ## [Unreleased]
 ### Added
+- Stage 4: Implemented `CandidateIntent` lifecycle (`CANDIDATE` -> `RISK_APPROVED` -> `SIZED` -> `DISPATCHED`) with immutable audit trails in `oms_project/candidate_intent.py`.
+- Stage 4: Built `ProfileTransitionManager` with confirmation thresholds, emergency fail-closed escalations (`DEGRADED_DATA`, `HIGH_VOLATILITY`), and hysteresis cooldown to prevent whipsawing.
+- Stage 4: Implemented `Stage4DecisionEngine` with dynamic risk sizing (volatility scaling, liquidity caps, cash checks) and end-to-end integration into `PaperExchange`.
+- Stage 4: Added dedicated test suite `oms_project/tests/test_stage4_decision_engine.py` (11 tests passing, full test suite at 160 tests).
 - Stage 3: Enhanced `PaperExchange` with `AdverseExecutionProfile` modeling bid/ask limit books, queue priority matching, non-linear slippage, fee schedules, liquidity caps, partial/no-fill modes, EOD session-end auto-cancellations, and sensitivity matrix generation.
 - Stage 3: Updated `BrokerGateway` to support `OrderType.LIMIT` with resting state and release reserved capital on exchange rejection.
 - Stage 3: Added dedicated test suite `oms_project/tests/test_paper_exchange_realism.py` (8 tests passing, regression suite at 149 tests).

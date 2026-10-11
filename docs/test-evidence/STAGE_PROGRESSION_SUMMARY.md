@@ -32,8 +32,8 @@ ALLOW_REAL_BROKER_EXECUTION=false
 | **Stage 1** | Historical Data Integrity & Provenance | **COMPLETED & PROMOTED** | Commit `cfa571e` (ADR-008, 133 tests green) |
 | **Stage 2** | Deterministic Historical Replay & Regime Eval | **COMPLETED & PROMOTED** | Commit `d963f73` (ADR-009, 141 tests green) |
 | **Stage 3** | Internal Paper Exchange & Execution Realism | **COMPLETED & PROMOTED** | Commit `91fe67d` (ADR-010, 149 tests green) |
-| **Stage 4** | Decision Engine, Candidate Intents & Market Adaptability | **READY TO START** | Next target phase |
-| **Stage 5** | Independent Live Paper Trading | **BLOCKED** | Requires Stage 4 completion & approval |
+| **Stage 4** | Decision Engine, Candidate Intents & Market Adaptability | **COMPLETED & VERIFIED** | Commit `feat(stage4)` (ADR-011, 160 tests green) |
+| **Stage 5** | Independent Live Paper Trading | **READY TO START** | Next target phase |
 | **Stage 6** | Broker Read-Only Shadow Mode | **BLOCKED** | Requires Stage 5 completion & approval |
 | **Stage 7** | Live-Trading Readiness Review | **BLOCKED** | Governance review |
 | **Stage 8** | Controlled Live-Trading Pilot | **BLOCKED** | Governance decision |
@@ -41,17 +41,16 @@ ALLOW_REAL_BROKER_EXECUTION=false
 
 ---
 
-## 3. Stage 3 Verification Summary
+## 3. Stage 4 Verification Summary
 
 - **Deliverables**:
-  - `OrderType.LIMIT` and `OrderType.MARKET` in `oms_project/schemas.py`.
-  - `AdverseExecutionProfile` and enhanced `PaperExchange` with order books (`bid_book`, `ask_book`), queue priority matching, non-linear slippage, fee schedules, liquidity caps, partial/no-fill modes, EOD session-end auto-cancellations, and sensitivity matrix generation in `oms_project/paper_exchange.py`.
-  - Releasing `strategy_reserved` on exchange rejection in `oms_project/gateway.py`.
-  - Tolerance fix in `oms_project/scripts/reconciliation.py`.
-  - Dedicated test suite `oms_project/tests/test_paper_exchange_realism.py` (8/8 passed).
-  - Full test suite: 149 passed.
+  - `CandidateIntent` lifecycle (`CANDIDATE` -> `RISK_APPROVED` -> `SIZED` -> `DISPATCHED`) with immutable audit trails in `oms_project/candidate_intent.py`.
+  - `ProfileTransitionManager` managing adaptation profiles (`TRENDING`, `CHOPPY`, `HIGH_VOLATILITY`, `LOW_LIQUIDITY`, `DEGRADED_DATA`, `NORMAL`) with confirmation threshold, emergency fail-closed escalation, and hysteresis cooldown.
+  - `Stage4DecisionEngine` with dynamic risk sizing (volatility downscaling, liquidity caps, cash checks) and end-to-end integration into `PaperExchange`.
+  - Dedicated test suite `oms_project/tests/test_stage4_decision_engine.py` (11/11 passed).
+  - Full test suite: 160 passed, 0 regressions.
   - Documentation:
-    - `docs/decisions/ADR-010-internal-paper-exchange-and-execution-realism.md`
-    - `docs/runbooks/INTERNAL_PAPER_EXCHANGE_REALISM.md`
-    - `docs/test-evidence/STAGE3_PAPER_EXCHANGE_REALISM_RESULTS.md`
+    - `docs/decisions/ADR-011-decision-engine-and-market-adaptability.md`
+    - `docs/runbooks/DECISION_ENGINE_AND_MARKET_ADAPTABILITY.md`
+    - `docs/test-evidence/STAGE4_DECISION_ENGINE_RESULTS.md`
     - Updates to `ARCHITECTURE.md`, `CHANGELOG.md`, `PROJECT_STATUS.md`.
