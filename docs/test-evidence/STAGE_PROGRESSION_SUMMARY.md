@@ -34,8 +34,8 @@ ALLOW_REAL_BROKER_EXECUTION=false
 | **Stage 3** | Internal Paper Exchange & Execution Realism | **COMPLETED & PROMOTED** | Commit `91fe67d` (ADR-010, 149 tests green) |
 | **Stage 4** | Decision Engine, Candidate Intents & Market Adaptability | **COMPLETED & VERIFIED** | Commit `feat(stage4)` (ADR-011, 160 tests green) |
 | **Stage 5** | Independent Live Paper Trading | **COMPLETED & VERIFIED** | ADR-012, 164 OMS tests green, 284 core tests green |
-| **Stage 6** | Broker Read-Only Shadow Mode | **READY TO START** | Next target phase |
-| **Stage 7** | Live-Trading Readiness Review | **BLOCKED** | Governance review |
+| **Stage 6** | Broker Read-Only Shadow Mode | **COMPLETED & VERIFIED** | ADR-013, 170 OMS tests green, 284 core tests green |
+| **Stage 7** | Live-Trading Readiness Review | **READY TO START** | Next target phase |
 | **Stage 8** | Controlled Live-Trading Pilot | **BLOCKED** | Governance decision |
 | **Stage 9** | Monitored Operation & Expansion | **BLOCKED** | Post-pilot |
 
