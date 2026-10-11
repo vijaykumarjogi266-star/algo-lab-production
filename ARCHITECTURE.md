@@ -18,3 +18,11 @@ Every completed task must update CHANGELOG.md, PROJECT_STATUS.md, BASELINE_GAP_R
 - Tamper detection triggers automatic dataset quarantine (`QUARANTINED`) and blocks replay via `ChecksumMismatchError`.
 - Integrated `DataValidator` enforcing monotonic timestamps, duplicate detection, valid prices/volumes, and IANA timezone validation.
 - Every replay execution is immutably linked to dataset ID, dataset version, checksum, and configuration hash.
+
+## Deterministic Historical Replay & Market-Regime Evaluation (Stage 2)
+- Built `ReplayClock` with monotonic time advancement and Indian market calendar / session awareness (09:15-15:30 IST).
+- Enforced strict look-ahead protection with `BoundedEventStream` and `LookAheadBiasError` for zero future-data leakage.
+- Multi-symbol synchronization strictly ordered by `(timestamp, symbol)`.
+- Dynamic market regime detection classifying trend, range, volatility, liquidity, session window, and degraded data.
+- Regime-aware gating blocking new entries during non-permitted market conditions.
+- Durable `replay_execution_reports` persisting P&L, drawdown, turnover, fees, slippage, and regime breakdown.

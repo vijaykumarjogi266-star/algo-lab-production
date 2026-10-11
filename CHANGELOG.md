@@ -1,6 +1,11 @@
 
 ## [Unreleased]
 ### Added
+- Stage 2: Implemented `ReplayClock` with monotonic clock advancement and session awareness (`Asia/Kolkata` trading hours).
+- Stage 2: Built `BoundedEventStream` and `LookAheadBiasError` enforcing strict look-ahead protection with multi-symbol synchronization.
+- Stage 2: Added `RegimeEvaluator` classifying market regimes (trend, range, volatility, liquidity, session window, degraded data) and gating decisions.
+- Stage 2: Built `ReplayExecutionEngine` persisting durable simulation metrics into `replay_execution_reports` table with bit-for-bit determinism.
+- Stage 2: Added comprehensive test suite in `oms_project/tests/test_deterministic_replay.py` (8 tests passing, regression suite at 141 tests).
 - Stage 1: Implemented `HistoricalDataRegistry` and `DataValidator` enforcing immutable dataset provenance, cryptographic SHA256 checksums, and fail-closed replay boundaries.
 - Stage 1: Added schema tables `dataset_registry`, `dataset_quality_reports`, and `replay_runs` to SQLite database.
 - Stage 1: Integrated tamper-detection into `HistoricalReplayEngine.load_verified_dataset`, automatically quarantining corrupted files and preventing replay.

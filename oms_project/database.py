@@ -263,6 +263,33 @@ CREATE TABLE IF NOT EXISTS replay_runs (
     metadata_json TEXT,
     FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
 );
+
+CREATE TABLE IF NOT EXISTS replay_execution_reports (
+    report_id TEXT PRIMARY KEY,
+    replay_run_id TEXT NOT NULL,
+    strategy_id TEXT NOT NULL,
+    strategy_version TEXT NOT NULL,
+    dataset_id TEXT NOT NULL,
+    dataset_checksum TEXT NOT NULL,
+    total_ticks INTEGER NOT NULL,
+    total_decisions INTEGER NOT NULL,
+    total_orders INTEGER NOT NULL,
+    total_fills INTEGER NOT NULL,
+    total_rejections INTEGER NOT NULL,
+    initial_cash TEXT NOT NULL,
+    final_equity TEXT NOT NULL,
+    net_pnl TEXT NOT NULL,
+    max_drawdown_pct TEXT NOT NULL,
+    turnover TEXT NOT NULL,
+    total_fees TEXT NOT NULL,
+    total_slippage TEXT NOT NULL,
+    reconciliation_status TEXT NOT NULL,
+    regimes_summary_json TEXT NOT NULL,
+    metrics_json TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    FOREIGN KEY(replay_run_id) REFERENCES replay_runs(replay_run_id),
+    FOREIGN KEY(dataset_id) REFERENCES dataset_registry(dataset_id)
+);
 """
 
 # Valid state machine transitions

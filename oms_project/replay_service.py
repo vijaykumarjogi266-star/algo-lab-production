@@ -11,6 +11,15 @@ import random
 from typing import List, Dict, Any, Optional, Callable
 from oms_project.schemas import NormalizedTick
 from oms_project.central_data_feed import MarketDataService
+from oms_project.deterministic_replay import (
+    LookAheadBiasError,
+    ReplayClockMonotonicityError,
+    ReplayClock,
+    BoundedEventStream,
+    MarketRegime,
+    RegimeEvaluator,
+    ReplayExecutionEngine,
+)
 
 
 def generate_synthetic_ticks(
@@ -136,6 +145,7 @@ class HistoricalReplayEngine:
 
             self.processed_count += 1
             prev_tick_ts = curr_tick_ts
+            self.current_replay_time = curr_tick_ts
 
         self.end_time = time.time()
         return self.processed_count
@@ -143,3 +153,19 @@ class HistoricalReplayEngine:
     def get_elapsed_time(self) -> float:
         """Returns elapsed wall clock time in seconds for the replay run."""
         return max(0.0001, self.end_time - self.start_time)
+
+    def get_history(self, symbol: Optional[str] = None, end_timestamp: Optional[float] = None) -> List[Dict[str, Any]]:
+        """
+        Returns history strictly at or before current replay time.
+        Raises LookAheadBiasError if end_timestamp > current_replay_time.
+        """
+        curr = getattr(self, "current_replay_time", 0.0)
+        if end_timestamp is not None and end_timestamp > curr:
+            raise LookAheadBiasError(
+                f"LookAheadBiasError: Requested timestamp {end_timestamp} exceeds current replay time {curr}"
+            )
+        effective_end = end_timestamp if end_timestamp is not None else curr
+        return [
+            t for t in self.ticks[: self.processed_count]
+            if float(t.get("timestamp", 0.0)) <= effective_end and (symbol is None or t.get("symbol") == symbol)
+        ]
