@@ -140,7 +140,6 @@ def run_5year_swing_backtest(
         stop_loss_atr_multiplier=2.5,         # 2.5x ATR14 stop loss (absorbs overnight gaps)
         take_profit_risk_multiplier=3.5,      # 3.5x Risk take profit (overcomes delivery taxes)
         dp_charge_flat=Decimal("15.34"),      # Flat ₹15.34 DP charge on sell leg
-        enable_technical_exit=enable_tech_exit,# Configurable early technical exit
         sector_map=sector_map,                # Institutional sector concentration guard
         max_drawdown_limit_pct=max_drawdown_limit, # Portfolio circuit breaker
     )
