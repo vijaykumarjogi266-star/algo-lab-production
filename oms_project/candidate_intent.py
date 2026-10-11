@@ -363,12 +363,13 @@ class Stage4DecisionEngine:
         portfolio_positions: Optional[Dict[str, float]] = None,
         available_cash: float = 100000.0,
         current_time: Optional[float] = None,
+        dispatch_immediately: bool = True,
     ) -> CandidateIntent:
         """
         Processes a CandidateIntent through the 4-phase lifecycle:
         1. CANDIDATE -> Regime Gating -> RISK_APPROVED or REJECTED_BY_REGIME
         2. RISK_APPROVED -> Dynamic Risk Sizing -> SIZED or REJECTED_BY_RISK
-        3. SIZED -> Execution Dispatch -> DISPATCHED
+        3. SIZED -> Execution Dispatch -> DISPATCHED (if dispatch_immediately is True)
         """
         self.processed_intents.append(intent)
         ts = current_time if current_time is not None else time.time()
@@ -499,7 +500,8 @@ class Stage4DecisionEngine:
         # -------------------------------------------------------------
         # PHASE 3: EXECUTION DISPATCH
         # -------------------------------------------------------------
-        self._dispatch_intent(intent, current_price, ts)
+        if dispatch_immediately:
+            self._dispatch_intent(intent, current_price, ts)
         return intent
 
     def _sign_intent_payload(
