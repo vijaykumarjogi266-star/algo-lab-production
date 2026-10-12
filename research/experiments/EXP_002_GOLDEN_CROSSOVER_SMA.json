@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_002_GOLDEN_CROSSOVER_SMA",
+  "hypothesis_title": "Golden Cross SMA 50/200 Trend Following",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Classical institutional trend following: Buy when 50 SMA crosses above 200 SMA on liquid blue-chips.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": 0.12,
+  "out_of_sample_sharpe": -0.2,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": -0.1,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 5.15,
+  "statutory_friction_paid_inr": 1696.63,
+  "status": "REJECTED_OVERFITTING",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:00:59.611184+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_001_SUPER_ADAPTIVE_MOMENTUM",
+  "hypothesis_title": "Super Adaptive Regime-Filtered Swing Momentum",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Trend-following alpha filtered by Nifty 50 market breadth (>50% above SMA50), 2-stage ATR trailing stop, and 1:3.5 risk-to-reward ratio to withstand statutory delivery taxes.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": 0.99,
+  "out_of_sample_sharpe": -0.19,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": -0.1,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 6.8,
+  "statutory_friction_paid_inr": 1091.62,
+  "status": "REJECTED_OVERFITTING",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:00:58.273047+00:00"
+}

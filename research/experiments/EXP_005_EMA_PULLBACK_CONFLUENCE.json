@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_005_EMA_PULLBACK_CONFLUENCE",
+  "hypothesis_title": "8/20 EMA Pullback Confluence in Established Trend",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Buys retracements to 8/20 EMA confluence with bullish candle/pin bar when Close > 50 SMA.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": -0.11,
+  "out_of_sample_sharpe": -0.13,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": -0.07,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 12.09,
+  "statutory_friction_paid_inr": 10247.35,
+  "status": "REJECTED_OVERFITTING",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:01:03.059139+00:00"
+}

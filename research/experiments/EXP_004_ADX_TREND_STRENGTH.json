@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_004_ADX_TREND_STRENGTH",
+  "hypothesis_title": "ADX Trend Strength Filtered Swing",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Regime filter requiring ADX > 25 and Close > 20 EMA to avoid range-bound whipsaws.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": -0.17,
+  "out_of_sample_sharpe": -0.2,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": -0.1,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 9.17,
+  "statutory_friction_paid_inr": 7251.54,
+  "status": "REJECTED_OVERFITTING",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:01:01.924860+00:00"
+}

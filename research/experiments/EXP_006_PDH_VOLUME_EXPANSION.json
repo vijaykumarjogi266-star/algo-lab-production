@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_006_PDH_VOLUME_EXPANSION",
+  "hypothesis_title": "High-Volume Previous Day High (PDH) Follow-Through",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Breakout above PDH accompanied by relative volume expansion > 1.5x on liquid large-caps.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": -0.2,
+  "out_of_sample_sharpe": 0.05,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": 0.03,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 10.98,
+  "statutory_friction_paid_inr": 5443.89,
+  "status": "OUT_OF_SAMPLE_VERIFIED",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:01:04.198652+00:00"
+}

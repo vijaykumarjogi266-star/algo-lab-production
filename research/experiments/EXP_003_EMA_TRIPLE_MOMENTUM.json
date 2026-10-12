@@ -1,0 +1,18 @@
+{
+  "experiment_id": "EXP_003_EMA_TRIPLE_MOMENTUM",
+  "hypothesis_title": "Triple EMA 5/8/13 Fast Trend Follow",
+  "target_universe": "NIFTY_50_CASH",
+  "economic_rationale": "Fast momentum cross (5 EMA over 13 EMA confirmed by 8 EMA) targeting fast expansion moves.",
+  "in_sample_window": "2021-10-01 to 2024-12-31",
+  "out_of_sample_window": "2025-01-01 to 2026-10-01",
+  "in_sample_sharpe": 0.01,
+  "out_of_sample_sharpe": -0.2,
+  "deflated_sharpe_ratio": 0.0,
+  "haircut_sharpe": -0.1,
+  "p_value_overfitting": 1.0,
+  "max_drawdown_oos": 11.25,
+  "statutory_friction_paid_inr": 6489.83,
+  "status": "REJECTED_OVERFITTING",
+  "verdict_notes": "Completed OOS evaluation. Requires parameter consolidation.",
+  "timestamp_utc": "2026-10-12T12:01:00.781652+00:00"
+}
