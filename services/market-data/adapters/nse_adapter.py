@@ -211,3 +211,47 @@ class NSELiveMarketDataAdapter(MarketDataProvider):
         """Seeds canonical bars for testing."""
         clean_symbol = symbol.replace(".NS", "").upper().strip()
         self._cached_bars[clean_symbol] = sorted(bars, key=lambda b: b.timestamp)
+
+    def fetch_historical_stock_df(
+        self,
+        symbol: str,
+        from_date: Any,
+        to_date: Any,
+        series: str = "EQ",
+    ) -> Optional[Any]:
+        """Fetches canonical historical daily OHLCV dataframe directly from NSE via jugaad-data."""
+        clean_symbol = symbol.replace(".NS", "").upper().strip()
+        if self.mock_mode:
+            import pandas as pd
+            return pd.DataFrame([
+                {
+                    "DATE": from_date,
+                    "SERIES": series,
+                    "OPEN": 2500.0,
+                    "HIGH": 2550.0,
+                    "LOW": 2490.0,
+                    "CLOSE": 2520.0,
+                    "VOLUME": 1000000,
+                    "VALUE": 2520000000.0,
+                }
+            ])
+        try:
+            from jugaad_data.nse import stock_df
+            df = stock_df(symbol=clean_symbol, from_date=from_date, to_date=to_date, series=series)
+            return df
+        except Exception as e:
+            logger.error("Failed to fetch historical stock dataframe for %s: %s", clean_symbol, e)
+            return None
+
+    def fetch_eod_bhavcopy(self, dt: Any, dest_dir: Optional[str] = None) -> Optional[str]:
+        """Downloads official NSE EOD Bhavcopy for a given date."""
+        if self.mock_mode:
+            return f"/tmp/bhavcopy_{dt}.csv"
+        try:
+            from jugaad_data.nse import bhavcopy_save
+            dest = dest_dir or "/tmp"
+            path = bhavcopy_save(dt, dest)
+            return path
+        except Exception as e:
+            logger.error("Failed to download NSE Bhavcopy for %s: %s", dt, e)
+            return None

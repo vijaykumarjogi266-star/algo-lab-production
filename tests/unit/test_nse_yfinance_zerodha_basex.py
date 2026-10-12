@@ -60,6 +60,19 @@ def test_nse_adapter_fetch_quote_and_bar():
     assert bar.timestamp.tzinfo == timezone.utc
 
 
+def test_nse_adapter_jugaad_historical_df_and_bhavcopy():
+    adapter = NSELiveMarketDataAdapter(mock_mode=True)
+    df = adapter.fetch_historical_stock_df("RELIANCE", from_date="2026-01-01", to_date="2026-01-10")
+    assert df is not None
+    assert len(df) == 1
+    assert "CLOSE" in df.columns
+    assert df["CLOSE"].iloc[0] == 2520.0
+
+    bhavcopy_path = adapter.fetch_eod_bhavcopy("2026-01-01")
+    assert bhavcopy_path is not None
+    assert "bhavcopy" in bhavcopy_path
+
+
 def test_nse_adapter_seeded_bars():
     adapter = NSELiveMarketDataAdapter(mock_mode=True)
     t0 = datetime(2026, 10, 11, 9, 15, tzinfo=timezone.utc)
