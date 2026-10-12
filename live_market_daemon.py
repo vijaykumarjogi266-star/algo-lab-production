@@ -486,6 +486,7 @@ class LiveAlgoLabDaemon:
         session_only: bool = True,
         loop_daily: bool = False,
         use_nifty_50: bool = True,
+        strategy: str = "STRATEGY_SUPER_ADAPTIVE",
     ):
         enforce_safety_invariants()
         self.interval = check_interval_seconds
@@ -493,6 +494,7 @@ class LiveAlgoLabDaemon:
         self.loop_daily = loop_daily
         self.running = True
         self.use_nifty_50 = use_nifty_50
+        self.strategy = os.getenv("DAEMON_STRATEGY", strategy)
 
         self.universe_manager = Nifty50UniverseManager()
         if self.use_nifty_50:
@@ -520,11 +522,20 @@ class LiveAlgoLabDaemon:
         # Swing Portfolio Parameters
         self.positions: Dict[str, ActiveSwingPosition] = {}
         self.completed_trades: List[Dict[str, Any]] = []
-        self.max_concurrent_positions: int = 2
-        self.max_capital_per_position: float = 45000.0
-        self.risk_per_trade_pct: float = 0.010  # Ed Thorp 1% risk rule
-        self.atr_multiplier: float = 2.5        # 2.5 * ATR14 Stop Loss
-        self.profit_multiplier: float = 3.5     # 3.5 * Risk Take Profit
+        if self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+            self.max_concurrent_positions: int = 3
+            self.max_capital_per_position: float = 30000.0
+            self.risk_per_trade_pct: float = 0.010  # Ed Thorp 1% risk rule
+            self.atr_multiplier: float = 3.0        # 3.0 * ATR14 Stop Loss
+            self.profit_multiplier: float = 5.0     # 5.0 * Risk Take Profit Target
+            self.min_cash_reserve: float = 10000.0
+        else:
+            self.max_concurrent_positions: int = 2
+            self.max_capital_per_position: float = 45000.0
+            self.risk_per_trade_pct: float = 0.010  # Ed Thorp 1% risk rule
+            self.atr_multiplier: float = 2.5        # 2.5 * ATR14 Stop Loss
+            self.profit_multiplier: float = 3.5     # 3.5 * Risk Take Profit
+            self.min_cash_reserve: float = 10000.0
 
         import yfinance as yf
         self.cached_market_data: Dict[str, Dict[str, Any]] = {}
@@ -751,9 +762,10 @@ class LiveAlgoLabDaemon:
                     continue
 
                 # Calculate indicators
-                high = df["High"]
-                low = df["Low"]
-                close = df["Close"]
+                high = df["High"].squeeze()
+                low = df["Low"].squeeze()
+                close = df["Close"].squeeze()
+                vol_series = df["Volume"].squeeze()
 
                 tr1 = high - low
                 tr2 = (high - close.shift(1)).abs()
@@ -761,7 +773,7 @@ class LiveAlgoLabDaemon:
                 tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
                 atr14 = float(tr.rolling(14).mean().iloc[-1])
 
-                # ALGO LAB UPGRADE: SMA 20/50 Crossover with 200-SMA Regime Filter
+                # ALGO LAB UPGRADE: Multi-Regime & Donchian Breakout Indicators
                 sma20_series = close.rolling(20).mean()
                 sma50_series = close.rolling(50).mean()
                 sma200_series = close.rolling(200).mean()
@@ -775,6 +787,32 @@ class LiveAlgoLabDaemon:
 
                 current_price = float(np.asarray(close).flatten()[-1])
                 high_price = float(np.asarray(high).flatten()[-1])
+                low_price = float(np.asarray(low).flatten()[-1])
+
+                # Donchian 50d high and 20d low levels
+                high_50s = high.shift(1).rolling(50).max()
+                low_20s = low.shift(1).rolling(20).min()
+                h_50 = float(np.asarray(high_50s).flatten()[-1]) if len(high_50s) >= 50 and not np.isnan(high_50s.iloc[-1]) else high_price
+                l_20 = float(np.asarray(low_20s).flatten()[-1]) if len(low_20s) >= 20 and not np.isnan(low_20s.iloc[-1]) else low_price
+
+                # Volume SMA 20
+                vol_sma20_series = vol_series.rolling(20).mean()
+                curr_vol = float(np.asarray(vol_series).flatten()[-1]) if not vol_series.empty else 0.0
+                vol_sma20 = float(np.asarray(vol_sma20_series).flatten()[-1]) if len(vol_sma20_series) >= 20 and not np.isnan(vol_sma20_series.iloc[-1]) else max(1.0, curr_vol)
+
+                # 60-day Momentum
+                mom60 = float((current_price / close.iloc[-60]) - 1.0) if len(close) >= 60 and close.iloc[-60] > 0 else 0.0
+
+                # ADX 14 calculation
+                plus_dm_raw = high.diff()
+                minus_dm_raw = low.diff().abs()
+                plus_dm = pd.Series(np.where((plus_dm_raw > minus_dm_raw) & (plus_dm_raw > 0), plus_dm_raw, 0.0), index=df.index)
+                minus_dm = pd.Series(np.where((minus_dm_raw > plus_dm_raw) & (minus_dm_raw > 0), minus_dm_raw, 0.0), index=df.index)
+                tr_sum = tr.rolling(14).sum()
+                plus_di = 100 * (plus_dm.rolling(14).sum() / (tr_sum + 1e-6))
+                minus_di = 100 * (minus_dm.rolling(14).sum() / (tr_sum + 1e-6))
+                dx = 100 * ((plus_di - minus_di).abs() / (plus_di + minus_di + 1e-6))
+                adx14 = float(dx.rolling(14).mean().iloc[-1]) if len(dx) >= 28 and not np.isnan(dx.iloc[-1]) else 20.0
 
                 # 🧠 QUANTAMENTAL UPGRADE: Apply Fundamental Filter
                 fundamental_pass = False
@@ -789,9 +827,16 @@ class LiveAlgoLabDaemon:
                 except:
                     pass
 
-                # Signal logic: Buy when 20 SMA crosses above 50 SMA AND Price is above 200 SMA (Bullish Regime) + Fundamentals
-                technical_signal = (prev_sma20 <= prev_sma50) and (sma20 > sma50) and (current_price > sma200)
-                buy_signal = technical_signal and fundamental_pass
+                # Strategy Signal Selection
+                if self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                    is_uptrend = (current_price > sma200) and (sma50 > sma200)
+                    is_breakout = (current_price >= h_50)
+                    is_vol_confirmed = (curr_vol >= vol_sma20 * 1.05)
+                    is_trend_strength = (adx14 >= 15.0)
+                    buy_signal = is_uptrend and is_breakout and is_vol_confirmed and is_trend_strength and fundamental_pass
+                else:
+                    technical_signal = (prev_sma20 <= prev_sma50) and (sma20 > sma50) and (current_price > sma200)
+                    buy_signal = technical_signal and fundamental_pass
                 signal_val = 1 if buy_signal else 0
 
                 # Candle freshness & completeness validation
@@ -804,12 +849,19 @@ class LiveAlgoLabDaemon:
                 self.cached_market_data[sym] = {
                     "price": current_price,
                     "high": high_price,
+                    "low": low_price,
                     "atr14": atr14,
                     "sma20": sma20,
-                    
                     "sma50": sma50,
+                    "sma200": sma200,
                     "prev_sma20": prev_sma20,
                     "prev_sma50": prev_sma50,
+                    "h_50": h_50,
+                    "l_20": l_20,
+                    "curr_vol": curr_vol,
+                    "vol_sma20": vol_sma20,
+                    "mom60": mom60,
+                    "adx14": adx14,
                     "signal": signal_val,
                     "candle_status": candle_status,
                     "candle_timestamp": candle_time.isoformat(),
@@ -843,7 +895,28 @@ class LiveAlgoLabDaemon:
                 highest_high = max(highest_high, market_info["high"])
             setattr(pos, "highest_high", highest_high)
             
-            if market_info and market_info.get("atr14"):
+            # Asymmetric ratchet & exit mechanism for STRATEGY_SUPER_ADAPTIVE
+            if self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                gain = highest_high - pos.entry_price
+                init_sl = getattr(pos, "initial_sl", pos.stop_loss)
+                r = pos.entry_price - init_sl
+                if r > 0:
+                    if gain >= 1.5 * r:
+                        # Ratchet to breakeven + 0.5% (covers STT, DP charge, slippage)
+                        pos.stop_loss = max(pos.stop_loss, round(pos.entry_price * 1.005, 2))
+                    if gain >= 3.0 * r:
+                        # Lock in 1.5R minimum profit
+                        pos.stop_loss = max(pos.stop_loss, round(pos.entry_price + (1.5 * r), 2))
+                    if gain >= 5.0 * r:
+                        # Chandelier trail from highest high
+                        if market_info and market_info.get("atr14"):
+                            pos.stop_loss = max(pos.stop_loss, round(highest_high - (2.0 * market_info["atr14"]), 2))
+
+                # Donchian 20-day low breach exit
+                l_20 = market_info.get("l_20") if market_info else None
+                if l_20 is not None and current_price <= l_20:
+                    exit_reason = "DONCHIAN_20D_EXIT"
+            elif market_info and market_info.get("atr14"):
                 trailing_sl = highest_high - (self.atr_multiplier * market_info["atr14"])
                 pos.stop_loss = max(pos.stop_loss, round(trailing_sl, 2))
 
@@ -852,6 +925,10 @@ class LiveAlgoLabDaemon:
                 exit_reason = "TRAILING_STOP_LOSS_HIT"
             elif current_price >= pos.take_profit:
                 exit_reason = "TAKE_PROFIT_HIT"
+            elif self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                l_20 = market_info.get("l_20") if market_info else None
+                if l_20 is not None and current_price <= l_20:
+                    exit_reason = "DONCHIAN_20D_EXIT"
             elif market_info:
                 # CFI 5-8-13 Technical Exit: Sell when 5 EMA crosses below 13 EMA
                 sma20 = market_info.get("sma20")
@@ -914,8 +991,17 @@ class LiveAlgoLabDaemon:
                 pos.holding_period_days += 1
 
         # 2. Check for new swing entries if capacity exists
+        if self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+            candidate_items = sorted(
+                self.cached_market_data.items(),
+                key=lambda x: x[1].get("mom60", 0.0),
+                reverse=True
+            )
+        else:
+            candidate_items = list(self.cached_market_data.items())
+
         if len(self.positions) < self.max_concurrent_positions and self.cash >= 15000.0:
-            for sym, data in self.cached_market_data.items():
+            for sym, data in candidate_items:
                 if len(self.positions) >= self.max_concurrent_positions:
                     break
                 if sym in self.positions:
@@ -974,6 +1060,8 @@ class LiveAlgoLabDaemon:
                             holding_period_days=1,
                             product_type="DELIVERY",
                         )
+                        setattr(new_pos, "initial_sl", stop_loss)
+                        setattr(new_pos, "highest_high", price)
                         self.positions[sym] = new_pos
                         self.cash = round(self.cash - cost, 2)
                         trade_record = {
