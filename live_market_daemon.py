@@ -1141,6 +1141,22 @@ class LiveAlgoLabDaemon:
 
         # STATE 3: EOD_TRADE_EXECUTION (15:15 - 15:25 IST)
         elif phase == DaemonPhase.EOD_TRADE_EXECUTION:
+            # 1. Enforce mandatory 15:15 IST auto-square-off for any active intraday paper sessions
+            intraday_db = BASE_DIR / "data" / "paper_intraday_sessions.db"
+            if intraday_db.exists():
+                try:
+                    from services.paper_engine.session import PaperTradingEngine, SessionStatus
+                    from services.paper_engine.trailing_stop_engine import TrailingStopEngine
+                    p_engine = PaperTradingEngine(str(intraday_db))
+                    for sess in p_engine.list_sessions():
+                        if sess.status == SessionStatus.RUNNING and sess.portfolio.positions:
+                            t_engine = TrailingStopEngine(p_engine, sess.session_id)
+                            sq_results = t_engine.auto_square_off_all_positions(reason="AUTO_SQUARE_OFF_1515_IST")
+                            if sq_results:
+                                print(f"[{timestamp_str} IST] 🚨 Auto-squared off {len(sq_results)} intraday positions in session {sess.session_id}")
+                except Exception as e:
+                    print(f"[{timestamp_str} IST] [WARN] Intraday square-off hook exception: {e}")
+
             if not self.cached_market_data:
                 self.ingest_near_close_daily_candles()
 
