@@ -1,6 +1,11 @@
 
 ## [Unreleased]
 ### Added
+- Paper Engine: Implemented `ClockProtocol` with `SystemClock` and deterministic `FrozenClock` in `services/paper-engine/trailing_stop_engine.py` to eliminate wall-clock coupling in test suites.
+- Daemon Lifecycle: Wired mandatory 15:15 IST intraday auto-square-off directly into `LiveAlgoLabDaemon.step()` (`EOD_TRADE_EXECUTION` phase) to ensure no paper MIS positions leak past market close.
+- Scanner & Universe: Integrated `DeepMultiIntervalScanner` across 5m, 15m, 1h, and 1d timeframes with Nifty 100 constituent tracking and regime confluence classification.
+- Quantitative Validation: Built stress-testing matrix and drawdown sensitivity curves in `services/backtest-engine/stress_testing_engine.py`.
+- Regression Suite: Verified 201/201 deterministic tests passing (175 OMS/Decision tests + 26 Unit/Scanner/Stress/Backtest tests).
 - Stage 4: Implemented `CandidateIntent` lifecycle (`CANDIDATE` -> `RISK_APPROVED` -> `SIZED` -> `DISPATCHED`) with immutable audit trails in `oms_project/candidate_intent.py`.
 - Stage 4: Built `ProfileTransitionManager` with confirmation thresholds, emergency fail-closed escalations (`DEGRADED_DATA`, `HIGH_VOLATILITY`), and hysteresis cooldown to prevent whipsawing.
 - Stage 4: Implemented `Stage4DecisionEngine` with dynamic risk sizing (volatility scaling, liquidity caps, cash checks) and end-to-end integration into `PaperExchange`.
@@ -20,7 +25,7 @@
 - GAP-07 (T28/T30): Built deterministic ReconciliationService to safely halt entries if external broker evidence conflicts with internal ledgers, preserving internal truth.
 - GAP-08: Implemented fully deterministic, Decimal-based virtual paper portfolio accounting layer (cash ledger, lots, fees, realized/unrealized P&L) isolated inside the OMS sandbox.
 - GAP-03: Hardened handling for order submission and cancellation timeouts (T05 and T10), preserving capital reservation, risk exposure, and implementing durable broker uncertainty records.
-Implemented Intraday Decision Engine with strict safety boundaries and market regime classifications.
+- Implemented Intraday Decision Engine with strict safety boundaries and market regime classifications.
 
 Regression repair after T15 concurrent reservation integration (Commit: c6c48782bfd39ba053bc94c2132bc9b79ca2b8d4)
 
