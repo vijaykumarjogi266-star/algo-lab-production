@@ -128,6 +128,15 @@ def run_live_intraday_scan() -> Dict[str, Any]:
             sl_price = round(current_price - sl_dist, 2)
             tp_price = round(current_price + (2.0 * sl_dist), 2)
 
+        # Circuit Lock & Illiquidity Defense
+        # 1. Reject if session change exceeds 8.5% (approaching 10% or 20% upper/lower circuit limit)
+        is_near_circuit = abs(session_change_pct) >= 8.5
+        # 2. Reject if day range is zero or price is extremely low (< ₹25 penny stock trap)
+        is_illiquid = (day_high == day_low) or (current_price < 25.0)
+
+        if is_near_circuit or is_illiquid:
+            continue
+
         if setup_name and sl_price < current_price:
             # Capital allocation: ₹25,000 per intraday slot
             intraday_slot_capital = 25000.0

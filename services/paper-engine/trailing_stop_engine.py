@@ -169,7 +169,20 @@ class PositionGuardState(BaseModel):
         if now_ist.time() >= INTRADAY_CUTOFF_TIME:
             return True, "AUTO_SQUARE_OFF_1515_IST"
 
-        # 2. Dynamic Trailing Stop Ratchet Updates
+        # 2. Defensive Microstructure Guards
+        # Guard against zero or non-positive price ticks (stale/disconnected feed)
+        if tick_price <= 0.0:
+            logger.warning(f"[{self.symbol}] Ignoring invalid non-positive tick price: ₹{tick_price}")
+            return False, None
+
+        # Guard against catastrophic circuit locks: if ask/bid price collapse or unrealistically distorted tick
+        if self.entry_price > 0.0:
+            price_deviation_pct = abs(tick_price - self.entry_price) / self.entry_price
+            if price_deviation_pct > 0.35:  # Over 35% instantaneous deviation from entry implies bad tick / broken feed
+                logger.error(f"[{self.symbol}] Extreme price deviation {price_deviation_pct*100:.1f}% detected (LTP: ₹{tick_price}). Rejecting tick to prevent bad fills.")
+                return False, None
+
+        # 3. Dynamic Trailing Stop Ratchet Updates
         if self.side == OrderSide.BUY:
             if tick_price > self.highest_watermark:
                 self.highest_watermark = tick_price

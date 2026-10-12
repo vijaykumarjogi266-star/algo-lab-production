@@ -324,3 +324,28 @@ def test_external_session_closure_synchronization(test_engine_and_session):
     # Subsequent tick must be ignored
     res = trailing_engine.process_tick("EICHERMOT", 7100.0)
     assert res["status"] == "IGNORED"
+
+
+def test_invalid_and_circuit_distorted_tick_rejection(market_hours_clock):
+    """Guarantees bad ticks (zero, negative, or >35% distorted) are rejected to prevent faulty fills."""
+    guard = PositionGuardState.create(
+        symbol="EICHERMOT",
+        quantity=2,
+        entry_price=7000.0,
+        side=OrderSide.BUY,
+        config=TrailingPositionConfig(
+            symbol="EICHERMOT",
+            stop_loss_pct=0.02,
+        ),
+    )
+
+    # 1. Zero or negative price tick
+    should_exit, _ = guard.evaluate_tick(0.0, clock=market_hours_clock)
+    assert not should_exit
+    should_exit, _ = guard.evaluate_tick(-50.0, clock=market_hours_clock)
+    assert not should_exit
+
+    # 2. Extreme anomalous deviation tick (>35% crash from 7000 to 4000)
+    should_exit, _ = guard.evaluate_tick(4000.0, clock=market_hours_clock)
+    assert not should_exit
+    assert guard.stop_loss == 6860.0  # Stop loss untouched by anomalous tick
