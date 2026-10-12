@@ -153,6 +153,20 @@ class MarketRegimeClassifier:
         # Also need previous day close/open for green candle checks
         prev_open = open_.shift(1)
         
+        # 5. Long-term breakout and momentum indicators
+        h_50 = high.shift(1).rolling_max(window_size=50)
+        l_20 = low.shift(1).rolling_min(window_size=20)
+        mom_60 = (close / close.shift(60) - 1.0).fill_null(0.0)
+
+        # 6. Relative Strength Index (RSI 14)
+        delta = close.diff()
+        gain = pl.when(delta > 0).then(delta).otherwise(0.0)
+        loss = pl.when(delta < 0).then(-delta).otherwise(0.0)
+        avg_gain = gain.ewm_mean(alpha=1/14, adjust=False)
+        avg_loss = loss.ewm_mean(alpha=1/14, adjust=False)
+        rs = avg_gain / (avg_loss + 1e-9)
+        rsi_14 = 100.0 - (100.0 / (1.0 + rs))
+
         # Regime Assignment
         # High Volatility Chop: ATR ratio > 1.45 or Close < 50-SMA with expanding volatility
         is_chop = (atr_ratio > 1.45) | ((close < sma_50) & (atr_ratio > 1.25))
@@ -175,6 +189,10 @@ class MarketRegimeClassifier:
             ema_20.alias("ema_20"),
             atr_14.alias("atr_14"),
             adx_14.alias("adx_14"),
+            rsi_14.alias("rsi_14"),
+            h_50.alias("h_50"),
+            l_20.alias("l_20"),
+            mom_60.alias("mom_60"),
             pdh.alias("pdh"),
             pdl.alias("pdl"),
             vol_sma20.alias("vol_sma20"),
@@ -183,6 +201,7 @@ class MarketRegimeClassifier:
             prev_open.alias("prev_open"),
             prev_high.alias("prev_high"),
             prev_low.alias("prev_low"),
+            is_chop.alias("is_chop"),
             regime.alias("market_regime"),
         ])
 
@@ -265,6 +284,20 @@ class AdaptiveMarketSurvivalBacktester:
                 row[col]: row for row in df.iter_rows(named=True)
             }
 
+        # Market Breadth Safety Guard (Defensive Cash Allocation)
+        market_safe: Dict[Any, bool] = {}
+        for ts in sorted_timestamps:
+            above_count = 0
+            total_valid = 0
+            for s in processed_dfs:
+                row = lookup[s].get(ts)
+                if row and row.get("close") is not None and row.get("sma_50") is not None:
+                    total_valid += 1
+                    if row["close"] > row["sma_50"]:
+                        above_count += 1
+            breadth = (above_count / total_valid) if total_valid > 0 else 0.5
+            market_safe[ts] = breadth >= 0.45
+
         latest_prices: Dict[str, float] = {}
         first_ts = sorted_timestamps[0]
         for s in processed_dfs:
@@ -306,6 +339,22 @@ class AdaptiveMarketSurvivalBacktester:
                     atr_val = bar.get("atr_14", curr_price * 0.015)
                     trailing_sl = pos["highest_high"] - (self.stop_loss_atr_multiplier * atr_val)
                     pos["stop_loss"] = max(pos["stop_loss"], trailing_sl)
+                elif self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                    pos["highest_high"] = max(pos.get("highest_high", pos["entry_price"]), high_price)
+                    atr_val = bar.get("atr_14", curr_price * 0.015)
+                    gain = pos["highest_high"] - pos["entry_price"]
+                    init_sl = pos.get("initial_sl", pos["stop_loss"])
+                    r = pos["entry_price"] - init_sl
+                    if r > 0:
+                        if gain >= 1.5 * r:
+                            # Ratchet to breakeven + 0.5% (covers STT, DP charge, slippage)
+                            pos["stop_loss"] = max(pos["stop_loss"], pos["entry_price"] * 1.005)
+                        if gain >= 3.0 * r:
+                            # Lock in 1.5R minimum profit
+                            pos["stop_loss"] = max(pos["stop_loss"], pos["entry_price"] + (1.5 * r))
+                        if gain >= 5.0 * r:
+                            # Chandelier trail from highest high
+                            pos["stop_loss"] = max(pos["stop_loss"], pos["highest_high"] - (2.0 * atr_val))
                 
                 sl_price = pos["stop_loss"]
                 tp_price = pos["take_profit"]
@@ -349,6 +398,12 @@ class AdaptiveMarketSurvivalBacktester:
                         if adx_14 is not None and adx_14 < 25.0:
                             exit_reason = "STRATEGY_C_EXIT"
                             exit_price = curr_price
+                    elif self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                        # Sell when Donchian 20-day low is breached
+                        l_20 = bar.get("l_20")
+                        if l_20 is not None and low_price <= l_20:
+                            exit_reason = "DONCHIAN_20D_EXIT"
+                            exit_price = min(curr_price, l_20)
                     # Strategies D and E use strict stop losses which are handled above.
                 
                 pos["prev_time"] = current_time
@@ -418,7 +473,16 @@ class AdaptiveMarketSurvivalBacktester:
                 if not hasattr(self, "_prev_bars"):
                     self._prev_bars = {}
 
-                for sym in sorted(processed_dfs.keys()):
+                if self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                    candidate_symbols = sorted(
+                        processed_dfs.keys(),
+                        key=lambda s: ((lookup[s].get(current_time) or {}).get("mom_60") or 0.0),
+                        reverse=True
+                    )
+                else:
+                    candidate_symbols = sorted(processed_dfs.keys())
+
+                for sym in candidate_symbols:
                     if sym in open_positions or len(open_positions) >= self.max_concurrent_positions:
                         self._prev_bars[sym] = lookup[sym].get(current_time)
                         continue
@@ -531,6 +595,34 @@ class AdaptiveMarketSurvivalBacktester:
                                 stop_dist = max(close_p - sl_price, close_p * 0.01)
                                 tp_price = close_p + (stop_dist * self.take_profit_risk_multiplier)
 
+                    elif self.strategy == "STRATEGY_SUPER_ADAPTIVE":
+                        # Survival Guard 1: Defensive Cash when market breadth drops
+                        if not market_safe.get(current_time, True):
+                            continue
+                        # Survival Guard 2: Avoid individual high-volatility chop
+                        if bar.get("is_chop", False):
+                            continue
+
+                        sma_50 = bar.get("sma_50")
+                        sma_200 = bar.get("sma_200")
+                        h_50 = bar.get("h_50")
+                        vol = bar.get("volume", 0)
+                        vol_sma = bar.get("vol_sma20", vol)
+                        adx_14 = bar.get("adx_14", 0.0)
+
+                        if sma_50 and sma_200 and h_50 and vol_sma:
+                            # Stage 2 Supertrend & Donchian 50d High Breakout with institutional volume
+                            is_uptrend = (close_p > sma_200) and (sma_50 > sma_200)
+                            is_breakout = close_p >= h_50
+                            is_vol_confirmed = vol >= vol_sma * 1.05
+                            is_trend_strength = (adx_14 is None or adx_14 >= 15.0)
+
+                            if is_uptrend and is_breakout and is_vol_confirmed and is_trend_strength:
+                                buy_signal = True
+                                stop_dist = max(atr_val * self.stop_loss_atr_multiplier, close_p * 0.02)
+                                sl_price = close_p - stop_dist
+                                tp_price = close_p + (stop_dist * self.take_profit_risk_multiplier)
+
                     if buy_signal and sl_price > 0 and sl_price < close_p:
                         fill_p = close_p
                         
@@ -562,6 +654,7 @@ class AdaptiveMarketSurvivalBacktester:
                             "entry_price": fill_p,
                             "quantity": final_qty,
                             "stop_loss": sl_price,
+                            "initial_sl": sl_price,
                             "take_profit": tp_price,
                             "sector": sector,
                             "regime": regime,

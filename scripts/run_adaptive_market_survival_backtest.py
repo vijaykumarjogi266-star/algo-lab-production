@@ -95,14 +95,15 @@ def ensure_cached_datasets(
 def run_5year_swing_backtest(
     years: int = 5,
     universe_name: str = "nifty50",
-    max_positions: int = 2,
+    max_positions: int = 3,
     max_drawdown_limit: float = 0.150,
     enable_tech_exit: bool = False,
     force_refresh: bool = False,
+    strategy: str = "STRATEGY_SUPER_ADAPTIVE",
 ):
     print("=" * 85)
     print("      🏛️  ALGO LAB INSTITUTIONAL SWING TRADING BACKTEST (DELIVERY / CNC)")
-    print(f"         Indian Cash Equities (NSE) | Universe: {universe_name.upper()} | {years}-Year Horizon")
+    print(f"         Indian Cash Equities (NSE) | Universe: {universe_name.upper()} | {years}-Year Horizon | Strategy: {strategy}")
     print("=" * 85)
 
     universe_mgr = Nifty50UniverseManager()
@@ -127,21 +128,25 @@ def run_5year_swing_backtest(
 
     # Execute Swing Trading Backtest
     mode_name = "PURE_CONVEXITY_3.5x_RISK" if not enable_tech_exit else "HYBRID_TECHNICAL_RSI_EXIT"
-    print(f"\n[PHASE 2] EXECUTING MULTI-YEAR SWING BACKTEST (Capital: ₹1,00,000.00 | Universe: {universe_label} | Slots: {max_positions} | Cap/Pos: ₹{max_cap:,.0f} | Mode: {mode_name})")
+    sl_atr = 3.0 if strategy == "STRATEGY_SUPER_ADAPTIVE" else 2.5
+    tp_mult = 5.0 if strategy == "STRATEGY_SUPER_ADAPTIVE" else 3.5
+    risk_pct = 0.015 if strategy == "STRATEGY_SUPER_ADAPTIVE" else 0.010
+    print(f"\n[PHASE 2] EXECUTING MULTI-YEAR SWING BACKTEST (Capital: ₹1,00,000.00 | Universe: {universe_label} | Slots: {max_positions} | Cap/Pos: ₹{max_cap:,.0f} | Strategy: {strategy})")
 
     engine = AdaptiveMarketSurvivalBacktester(
         initial_capital=100000.0,
         max_capital_per_position=max_cap,     # Dynamic allocation (Ed Thorp sizing)
         max_concurrent_positions=max_positions,# Dynamic concurrent positions
-        risk_per_trade_pct=0.010,             # 1.0% portfolio risk rule intact
+        risk_per_trade_pct=risk_pct,          # Risk rule per trade
         min_cash_reserve=10000.0,             # ₹10,000 minimum cash solvency buffer
         slippage_bps=5.0,                     # 5 bps realistic execution slippage
         product=ProductType.DELIVERY,         # Delivery/CNC swing trading
-        stop_loss_atr_multiplier=2.5,         # 2.5x ATR14 stop loss (absorbs overnight gaps)
-        take_profit_risk_multiplier=3.5,      # 3.5x Risk take profit (overcomes delivery taxes)
+        stop_loss_atr_multiplier=sl_atr,      # ATR Stop Loss
+        take_profit_risk_multiplier=tp_mult,  # Risk take profit
         dp_charge_flat=Decimal("15.34"),      # Flat ₹15.34 DP charge on sell leg
         sector_map=sector_map,                # Institutional sector concentration guard
         max_drawdown_limit_pct=max_drawdown_limit, # Portfolio circuit breaker
+        strategy=strategy,
     )
 
     results = engine.run_backtest(datasets)
@@ -284,7 +289,8 @@ def main():
     parser = argparse.ArgumentParser(description="Algo Lab Institutional Swing Backtest Runner (Multi-Year Stress Test)")
     parser.add_argument("--years", type=int, default=5, help="Backtest horizon in years (default: 5)")
     parser.add_argument("--universe", type=str, choices=["nifty50", "leaders"], default="nifty50", help="Trading universe (default: nifty50)")
-    parser.add_argument("--max-positions", type=int, default=2, help="Max concurrent positions (default: 2)")
+    parser.add_argument("--strategy", type=str, choices=["STRATEGY_SUPER_ADAPTIVE", "STRATEGY_A", "STRATEGY_B", "STRATEGY_C", "STRATEGY_D", "STRATEGY_E"], default="STRATEGY_SUPER_ADAPTIVE", help="Trading strategy (default: STRATEGY_SUPER_ADAPTIVE)")
+    parser.add_argument("--max-positions", type=int, default=3, help="Max concurrent positions (default: 3)")
     parser.add_argument("--max-drawdown", type=float, default=0.150, help="Max drawdown circuit breaker limit (default: 0.150)")
     parser.add_argument("--tech-exit", action="store_true", default=False, help="Enable early technical RSI exit (default: False)")
     parser.add_argument("--refresh", action="store_true", default=False, help="Force refresh daily datasets from yfinance")
@@ -293,6 +299,7 @@ def main():
     run_5year_swing_backtest(
         years=args.years,
         universe_name=args.universe,
+        strategy=args.strategy,
         max_positions=args.max_positions,
         max_drawdown_limit=args.max_drawdown,
         enable_tech_exit=args.tech_exit,
