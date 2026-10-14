@@ -116,7 +116,7 @@ def run_5year_swing_backtest(
         sector_map = None
         universe_label = f"NIFTY CORE LEADERS ({len(symbols)} Symbols)"
 
-    cache_dir = Path("/home/ubuntu/algolab-sandbox/disposable_sandbox/data/cache")
+    cache_dir = BASE_DIR / "data" / "cache"
     datasets = ensure_cached_datasets(cache_dir, symbols=symbols, years=years, force_refresh=force_refresh)
 
     if len(datasets) < len(symbols):

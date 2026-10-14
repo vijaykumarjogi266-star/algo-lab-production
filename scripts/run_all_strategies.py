@@ -60,7 +60,7 @@ def main():
     symbols = universe_mgr.get_symbols()
     sector_map = universe_mgr.get_sector_map()
 
-    cache_dir = Path("/home/ubuntu/algolab-sandbox/disposable_sandbox/data/cache")
+    cache_dir = BASE_DIR / "data" / "cache"
     datasets = ensure_cached_datasets(cache_dir, symbols=symbols, years=5)
 
     strategies = [

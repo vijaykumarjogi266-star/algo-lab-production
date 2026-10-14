@@ -218,10 +218,10 @@ def main():
     parser.add_argument("--period", type=str, default="5y", help="Historical horizon (default: 5y)")
     args = parser.parse_args()
 
-    cache_dirs = [
-        Path("/home/ubuntu/algolab-sandbox/disposable_sandbox/data/cache"),
-        BASE_DIR / "data" / "cache",
-    ]
+    cache_dirs = [BASE_DIR / "data" / "cache"]
+    sandbox_cache = Path("/home/ubuntu/algolab-sandbox/disposable_sandbox/data/cache")
+    if sandbox_cache.parent.exists():
+        cache_dirs.append(sandbox_cache)
 
     batch_ingest_nifty50_5y(
         cache_dirs=cache_dirs,

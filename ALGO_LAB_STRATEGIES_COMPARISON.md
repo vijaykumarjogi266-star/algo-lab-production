@@ -12,8 +12,8 @@
 
 | Strategy | Net Profit (₹) | CAGR (%) | Win Rate (%) | Profit Factor | Max Drawdown (%) | Total Trades | Total Frictions Paid (₹) |
 |---|---|---|---|---|---|---|---|
-| CFI: Golden Cross | ₹779.46 | 0.16% | 37.97% | 1.03 | 6.86% | 79 | ₹6,224.56 |
-| CFI: 5-8-13 Fibonacci EMA | ₹-1,568.77 | -0.32% | 31.14% | 0.98 | 9.96% | 228 | ₹16,564.24 |
-| CFI: Simple ADX Trend | ₹-8,671.49 | -1.80% | 26.42% | 0.45 | 10.22% | 53 | ₹2,990.74 |
-| Prabhu: 8/20 EMA Pullback | ₹-6,564.54 | -1.35% | 20.59% | 0.74 | 12.14% | 34 | ₹5,041.39 |
-| Prabhu: High-Volume PDH Follow-Through | ₹-10,853.79 | -2.27% | 17.14% | 0.63 | 10.85% | 35 | ₹3,707.96 |
+| CFI: Golden Cross | ₹2,461.51 | 0.49% | 40.00% | 1.11 | 6.74% | 75 | ₹5,820.12 |
+| CFI: 5-8-13 Fibonacci EMA | ₹668.15 | 0.13% | 30.72% | 1.01 | 10.09% | 153 | ₹10,883.58 |
+| CFI: Simple ADX Trend | ₹-9,963.18 | -2.08% | 26.09% | 0.32 | 10.47% | 46 | ₹2,513.01 |
+| Prabhu: 8/20 EMA Pullback | ₹-5,208.69 | -1.06% | 21.43% | 0.75 | 12.08% | 28 | ₹4,114.93 |
+| Prabhu: High-Volume PDH Follow-Through | ₹-1,769.45 | -0.36% | 23.53% | 0.93 | 10.08% | 34 | ₹3,642.88 |
