@@ -89,14 +89,16 @@ class BaseStrategy(ABC):
         """
         pass
 
-    def default_wait(self, symbol: str, timestamp: datetime, reason: str = "No setup criteria met") -> StrategyDecision:
+    def default_wait(self, symbol: str, timestamp: Optional[datetime] = None, reason: str = "No setup criteria met") -> StrategyDecision:
         """Convenience generator for WAIT decisions (Principle 2)."""
+        ts = timestamp if timestamp is not None else datetime.now(timezone.utc)
         return StrategyDecision(
             symbol=symbol,
-            decision_timestamp=timestamp,
+            decision_timestamp=ts,
             signal=SignalType.WAIT,
             confidence=0.0,
             reason=reason,
             evidence={},
         )
+
 
