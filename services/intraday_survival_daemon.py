@@ -1030,10 +1030,14 @@ class IntradaySurvivalEngine:
                 capture_output=True,
                 text=True,
                 timeout=120,
-                env=dict(os.environ, OPENCLAW_GATEWAY_TOKEN="32abb85205d3eaae4d1c2a59b5aa68bddbe76b8dc1b799d0")
+                env=os.environ  # OpenClaw token should be set via OPENCLAW_GATEWAY_TOKEN env var
             )
             if proc.returncode == 0 and proc.stdout.strip():
                 review_text = proc.stdout.strip()
+            elif proc.returncode != 0:
+                logger.warning(f"OpenClaw agent returned non-zero exit code: {proc.returncode}")
+                if proc.stderr:
+                    logger.warning(f"OpenClaw stderr: {proc.stderr[:200]}...")
         except Exception as e:
             logger.warning(f"OpenClaw live agent query failed/timed out: {e}")
 
