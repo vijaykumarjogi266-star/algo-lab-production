@@ -26,6 +26,16 @@ from src.notification_engine import (
 )
 
 
+@pytest.fixture(autouse=True)
+def isolate_notification_env(monkeypatch):
+    monkeypatch.setattr("src.notification_engine.load_env_vars", lambda *args, **kwargs: {})
+    monkeypatch.delenv("DISCORD_WEBHOOK_URL", raising=False)
+    monkeypatch.delenv("WEBHOOK_URL", raising=False)
+    monkeypatch.delenv("TELEGRAM_WEBHOOK_URL", raising=False)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+
+
 def test_notification_engine_initialization_no_urls():
     """Verifies notifier initializes gracefully when no webhook URLs are provided."""
     notifier = DiscordWebhookNotifier(discord_webhook_url="", telegram_webhook_url="")

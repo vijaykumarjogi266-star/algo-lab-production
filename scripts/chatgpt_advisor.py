@@ -124,7 +124,7 @@ Examples:
     parser.add_argument("--review", metavar="FILE", help="Perform forensic code and logic review on specified file")
     parser.add_argument("--focus", help="Optional focus area for code review (e.g., 'slippage', 'state consistency')")
     parser.add_argument("--state", action="store_true", help="Inspect live Algo Lab portfolio state and ask GPT for risk instructions")
-    parser.add_argument("--free", action="store_true", help="Use 100% free zero-key model (no OpenAI credits needed)")
+    parser.add_argument("--free", action="store_true", help="Use 100%% free zero-key model (no OpenAI credits needed)")
     parser.add_argument("--instructions", metavar="CONTEXT", help="Generate actionable institutional instructions for given context")
     parser.add_argument("--set-key", metavar="KEY", help="Save or update OpenAI API key into .env")
     parser.add_argument("--status", action="store_true", help="Check OpenAI API key and connectivity status")

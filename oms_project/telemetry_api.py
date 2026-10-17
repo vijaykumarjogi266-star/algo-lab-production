@@ -10,7 +10,16 @@ from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Header, WebSocket, WebSocketDisconnect, Security
 from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from pydantic import BaseModel, Field
+
+# --- ENFORCE READ-ONLY FAIL-CLOSED TELEMETRY SAFETY ---
+os.environ.setdefault("TRADING_MODE", "READ_ONLY")
+os.environ.setdefault("ALLOW_LIVE_TRADING", "false")
+os.environ.setdefault("REAL_MONEY_RISK_PAISE", "0")
+os.environ.setdefault("PAPER_BROKER_ONLY", "true")
+os.environ.setdefault("ORDER_SUBMISSION_ENABLED", "false")
+os.environ.setdefault("ALLOW_REAL_BROKER_EXECUTION", "false")
 
 from oms_project.schemas import OrderState
 from oms_project.gateway import BrokerGateway

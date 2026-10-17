@@ -89,14 +89,13 @@ class DiscordWebhookNotifier:
         load_env_vars()
         self.discord_webhook_url = (
             discord_webhook_url
-            or os.getenv("DISCORD_WEBHOOK_URL")
-            or os.getenv("WEBHOOK_URL")
-            or ""
+            if discord_webhook_url is not None
+            else (os.getenv("DISCORD_WEBHOOK_URL") or os.getenv("WEBHOOK_URL") or "")
         ).strip()
         self.telegram_webhook_url = (
             telegram_webhook_url
-            or os.getenv("TELEGRAM_WEBHOOK_URL")
-            or ""
+            if telegram_webhook_url is not None
+            else (os.getenv("TELEGRAM_WEBHOOK_URL") or "")
         ).strip()
 
         self.bot_name = bot_name
