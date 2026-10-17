@@ -84,6 +84,19 @@ def send_telegram_alert(message: str, parse_mode: str = "HTML") -> bool:
         return False
 
 
+def get_confidence_badge(score: float) -> str:
+    """Returns a visual badge and category based on quantitative conviction score (0.0 to 1.0)."""
+    pct = score * 100 if score <= 1.0 else score
+    if pct >= 90.0:
+        return f"⭐⭐⭐⭐⭐ <b>{pct:.1f}%</b> [ULTRA-HIGH CONVICTION]"
+    elif pct >= 80.0:
+        return f"⭐⭐⭐⭐ <b>{pct:.1f}%</b> [HIGH CONVICTION]"
+    elif pct >= 70.0:
+        return f"⭐⭐⭐ <b>{pct:.1f}%</b> [MODERATE CONVICTION]"
+    else:
+        return f"⭐⭐ <b>{pct:.1f}%</b> [BASELINE SPECULATIVE]"
+
+
 def format_live_entry_call(
     symbol: str,
     action: str = "BUY",
@@ -94,10 +107,15 @@ def format_live_entry_call(
     allocated_margin: Optional[float] = None,
     strategy: str = "AlgoLab Momentum",
     segment: str = "INTRADAY (MIS)",
-    notes: str = ""
+    notes: str = "",
+    confidence_score: Optional[float] = None,
+    regime: Optional[str] = None,
+    setup_factors: Optional[Dict[str, Any]] = None,
+    agent_consensus: Optional[str] = None,
 ) -> str:
     """
-    Formats a high-conviction live trading call with Stock Name, Entry, Exit/SL, and Target.
+    Formats a high-conviction live trading call with Stock Name, Entry, Exit/SL, Target,
+    Conviction Rating, Market Regime, and Multi-Agent Consensus.
     """
     now_ist = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")
     clean_sym = symbol.replace(".NS", "").upper()
@@ -117,6 +135,15 @@ def format_live_entry_call(
         "━━━━━━━━━━━━━━━━━━━━━━━━━━",
         f"🏢 <b>Stock Name:</b> <code>{clean_sym}</code> (NSE)",
         f"⚡ <b>Action:</b> {badge_emoji} <b>{action.upper()}</b> | <b>{segment}</b>",
+    ]
+
+    if confidence_score is not None:
+        lines.append(f"🌟 <b>Conviction:</b> {get_confidence_badge(confidence_score)}")
+
+    if regime:
+        lines.append(f"🌐 <b>Market Regime:</b> <code>{regime}</code>")
+
+    lines.extend([
         f"💰 <b>Entry Price:</b> <b>₹{entry_price:,.2f}</b>",
         f"🎯 <b>Target Price:</b> <b>₹{target_price:,.2f}</b> (+{reward_pct:.2f}%)",
         f"🛑 <b>Exit / Stop Loss:</b> <b>₹{stop_loss:,.2f}</b> (-{risk_pct:.2f}%)",
@@ -124,8 +151,16 @@ def format_live_entry_call(
         f"📦 <b>Quantity:</b> {quantity} shares",
         f"💼 <b>Capital / Margin:</b> ₹{margin:,.2f}",
         f"📊 <b>Strategy:</b> {strategy}",
-        f"⏰ <b>Trigger Time:</b> {now_ist}",
-    ]
+    ])
+
+    if setup_factors:
+        factors_str = " | ".join([f"{k}: <b>{v}</b>" for k, v in setup_factors.items()])
+        lines.append(f"🔬 <b>Setup Factors:</b> {factors_str}")
+
+    if agent_consensus:
+        lines.append(f"🤖 <b>Multi-Agent Vote:</b> {agent_consensus}")
+
+    lines.append(f"⏰ <b>Trigger Time:</b> {now_ist}")
 
     if notes:
         lines.append(f"📝 <b>Notes:</b> {notes}")
@@ -133,6 +168,53 @@ def format_live_entry_call(
     lines.extend([
         "━━━━━━━━━━━━━━━━━━━━━━━━━━",
         "Status: 🟢 <b>ACTIVE IN MARKET</b>",
+    ])
+
+    return "\n".join(lines)
+
+
+def format_live_cancellation_call(
+    symbol: str,
+    action: str = "BUY",
+    entry_price: float = 0.0,
+    reason: str = "ORDER_TIMEOUT_EXPIRED",
+    freed_margin: Optional[float] = None,
+    segment: str = "INTRADAY (MIS)",
+    notes: str = "",
+) -> str:
+    """
+    Formats an automatic cancellation/expiry notice when an unfilled call or pending order expires.
+    """
+    now_ist = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")
+    clean_sym = symbol.replace(".NS", "").upper()
+
+    reason_desc = {
+        "ORDER_TIMEOUT_EXPIRED": "Unfilled after max duration (Time-Decay Expiry)",
+        "REGIME_INVALIDATED": "Market regime drifted (ADX/VWAP setup invalidated)",
+        "CONSENSUS_VETOED": "Multi-agent committee vetoed trade parameters",
+        "15:15_CUTOFF": "Mandatory intraday square-off window reached",
+        "MANUAL_CANCEL": "Admin / Risk Manager canceled pending call",
+    }.get(reason.upper(), reason)
+
+    lines = [
+        "🚫 <b>LIVE TRADING CALL: CANCELLED / EXPIRED</b>",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        f"🏢 <b>Stock Name:</b> <code>{clean_sym}</code> (NSE)",
+        f"⚡ <b>Action:</b> ⚪ <b>{action.upper()} ({segment})</b>",
+        f"🔔 <b>Reason:</b> <code>{reason}</code> ({reason_desc})",
+        f"💰 <b>Proposed Entry:</b> ₹{entry_price:,.2f}",
+    ]
+
+    if freed_margin and freed_margin > 0:
+        lines.append(f"🔓 <b>Capital Freed:</b> ₹{freed_margin:,.2f} (100% Preserved)")
+
+    if notes:
+        lines.append(f"📝 <b>Notes:</b> {notes}")
+
+    lines.extend([
+        f"⏰ <b>Cancellation Time:</b> {now_ist}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "Status: ⚪ <b>CALL INACTIVE & CAPITAL RETURNED</b>",
     ])
 
     return "\n".join(lines)
@@ -378,8 +460,36 @@ def broadcast_trade_entry(
     allocated_margin: Optional[float] = None,
     strategy: str = "AlgoLab Engine",
     segment: str = "INTRADAY (MIS)",
-    notes: str = ""
+    notes: str = "",
+    confidence_score: Optional[float] = None,
+    regime: Optional[str] = None,
+    setup_factors: Optional[Dict[str, Any]] = None,
+    agent_consensus: Optional[str] = None,
+    auto_consensus: bool = True,
 ) -> bool:
+    """Dispatches a live trade entry call, optionally running pre-trade multi-agent consensus."""
+    if auto_consensus and agent_consensus is None:
+        try:
+            from services.orchestrator.agent_consensus import agent_consensus_engine
+            margin = allocated_margin if allocated_margin is not None else (entry_price * quantity)
+            verdict = agent_consensus_engine.run_consensus(
+                symbol=symbol,
+                action=action,
+                entry_price=entry_price,
+                stop_loss=stop_loss,
+                target_price=target_price,
+                quantity=quantity,
+                capital=max(10000.0, margin),
+                regime=regime or "BULL_MOMENTUM",
+            )
+            agent_consensus = verdict.summary
+            if confidence_score is None:
+                confidence_score = verdict.composite_score
+            if regime is None:
+                regime = "BULL_MOMENTUM" if action.upper() == "BUY" else "BEAR_MOMENTUM"
+        except Exception as e:
+            logger.debug(f"Pre-trade consensus evaluation skipped: {e}")
+
     msg = format_live_entry_call(
         symbol=symbol,
         action=action,
@@ -389,6 +499,32 @@ def broadcast_trade_entry(
         quantity=quantity,
         allocated_margin=allocated_margin,
         strategy=strategy,
+        segment=segment,
+        notes=notes,
+        confidence_score=confidence_score,
+        regime=regime,
+        setup_factors=setup_factors,
+        agent_consensus=agent_consensus,
+    )
+    return send_telegram_alert(msg)
+
+
+def broadcast_trade_cancelled(
+    symbol: str,
+    action: str = "BUY",
+    entry_price: float = 0.0,
+    reason: str = "ORDER_TIMEOUT_EXPIRED",
+    freed_margin: Optional[float] = None,
+    segment: str = "INTRADAY (MIS)",
+    notes: str = "",
+) -> bool:
+    """Dispatches an automatic trade cancellation/expiry notification to Telegram."""
+    msg = format_live_cancellation_call(
+        symbol=symbol,
+        action=action,
+        entry_price=entry_price,
+        reason=reason,
+        freed_margin=freed_margin,
         segment=segment,
         notes=notes,
     )

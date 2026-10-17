@@ -213,6 +213,32 @@ class WebhookDispatcher:
             logger.warning(f"Failed to broadcast trailing SL: {e}")
             return False
 
+    def notify_trade_cancelled(
+        self,
+        symbol: str,
+        action: str = "BUY",
+        entry_price: float = 0.0,
+        reason: str = "ORDER_TIMEOUT_EXPIRED",
+        freed_margin: Optional[float] = None,
+        segment: str = "INTRADAY (MIS)",
+        notes: str = "",
+    ) -> bool:
+        """Dispatches real-time notification when a trade call or order is cancelled/expired."""
+        try:
+            from services.observability.trading_calls import broadcast_trade_cancelled
+            return broadcast_trade_cancelled(
+                symbol=symbol,
+                action=action,
+                entry_price=entry_price,
+                reason=reason,
+                freed_margin=freed_margin,
+                segment=segment,
+                notes=notes,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to broadcast trade cancellation: {e}")
+            return False
+
 
 if __name__ == "__main__":
     dispatcher = WebhookDispatcher()

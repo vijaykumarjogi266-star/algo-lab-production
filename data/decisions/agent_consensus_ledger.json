@@ -1,0 +1,410 @@
+[
+  {
+    "symbol": "SBIN",
+    "action": "BUY",
+    "entry_price": 800.0,
+    "stop_loss": 790.0,
+    "target_price": 820.0,
+    "quantity": 50,
+    "composite_score": 0.838,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b9500.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.00 >= 1.5, Expectancy=+\u20b96.50/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw</b> (Score: 83.8%)",
+    "timestamp": "2026-10-17 21:51:01 IST"
+  },
+  {
+    "symbol": "HDFCBANK",
+    "action": "BUY",
+    "entry_price": 1600.0,
+    "stop_loss": 1580.0,
+    "target_price": 1640.0,
+    "quantity": 15,
+    "composite_score": 0.838,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b9300.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.00 >= 1.5, Expectancy=+\u20b913.00/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw</b> (Score: 83.8%)",
+    "timestamp": "2026-10-17 21:51:01 IST"
+  },
+  {
+    "symbol": "RELIANCE",
+    "action": "BUY",
+    "entry_price": 2800.0,
+    "stop_loss": 2780.0,
+    "target_price": 2850.0,
+    "quantity": 5,
+    "composite_score": 0.9465,
+    "unanimous": true,
+    "status": "APPROVED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=32.0 indicates robust trend; VIX=13.5 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "APPROVED",
+        "score": 0.93,
+        "reasoning": "Invariant checks passed. Total Risk=\u20b9100.00 <= \u20b9150.00 cap. Friction=8.5bps.",
+        "checks": {
+          "max_risk_invariant": true,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.50 >= 1.5, Expectancy=+\u20b918.50/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u2705 <b>UNANIMOUS (94.7%)</b> | Hermes (95%) \u2022 OpenClaw (93%) \u2022 Antigravity (96%)",
+    "timestamp": "2026-10-17 21:51:01 IST"
+  },
+  {
+    "symbol": "RELIANCE",
+    "action": "BUY",
+    "entry_price": 2800.0,
+    "stop_loss": 2600.0,
+    "target_price": 2900.0,
+    "quantity": 10,
+    "composite_score": 0.614,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b92000.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "REJECTED",
+        "score": 0.32,
+        "reasoning": "Unfavorable asymmetric edge: R:R ratio 0.50 is below minimum 1:1.5 threshold.",
+        "checks": {
+          "risk_reward_ge_1_5": false,
+          "positive_expectancy": false,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw, Antigravity</b> (Score: 61.4%)",
+    "timestamp": "2026-10-17 21:51:01 IST"
+  },
+  {
+    "symbol": "SBIN",
+    "action": "BUY",
+    "entry_price": 800.0,
+    "stop_loss": 790.0,
+    "target_price": 820.0,
+    "quantity": 50,
+    "composite_score": 0.838,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b9500.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.00 >= 1.5, Expectancy=+\u20b96.50/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw</b> (Score: 83.8%)",
+    "timestamp": "2026-10-17 21:51:17 IST"
+  },
+  {
+    "symbol": "HDFCBANK",
+    "action": "BUY",
+    "entry_price": 1600.0,
+    "stop_loss": 1580.0,
+    "target_price": 1640.0,
+    "quantity": 15,
+    "composite_score": 0.838,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b9300.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.00 >= 1.5, Expectancy=+\u20b913.00/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw</b> (Score: 83.8%)",
+    "timestamp": "2026-10-17 21:51:17 IST"
+  },
+  {
+    "symbol": "RELIANCE",
+    "action": "BUY",
+    "entry_price": 2800.0,
+    "stop_loss": 2780.0,
+    "target_price": 2850.0,
+    "quantity": 5,
+    "composite_score": 0.9465,
+    "unanimous": true,
+    "status": "APPROVED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=32.0 indicates robust trend; VIX=13.5 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "APPROVED",
+        "score": 0.93,
+        "reasoning": "Invariant checks passed. Total Risk=\u20b9100.00 <= \u20b9150.00 cap. Friction=8.5bps.",
+        "checks": {
+          "max_risk_invariant": true,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "APPROVED",
+        "score": 0.96,
+        "reasoning": "Mathematical edge verified. R:R=2.50 >= 1.5, Expectancy=+\u20b918.50/share, WinRate=55%.",
+        "checks": {
+          "risk_reward_ge_1_5": true,
+          "positive_expectancy": true,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u2705 <b>UNANIMOUS (94.7%)</b> | Hermes (95%) \u2022 OpenClaw (93%) \u2022 Antigravity (96%)",
+    "timestamp": "2026-10-17 21:51:17 IST"
+  },
+  {
+    "symbol": "RELIANCE",
+    "action": "BUY",
+    "entry_price": 2800.0,
+    "stop_loss": 2600.0,
+    "target_price": 2900.0,
+    "quantity": 10,
+    "composite_score": 0.614,
+    "unanimous": false,
+    "status": "REJECTED",
+    "votes": {
+      "Hermes": {
+        "agent": "Hermes",
+        "role": "Macro & Regime Sentinel",
+        "status": "APPROVED",
+        "score": 0.95,
+        "reasoning": "Regime BULL_MOMENTUM validated. ADX=28.5 indicates robust trend; VIX=14.2 within safe operating bounds.",
+        "checks": {
+          "adx_trend_sufficient": true,
+          "india_vix_safe": true,
+          "regime_aligned": true
+        }
+      },
+      "OpenClaw": {
+        "agent": "OpenClaw",
+        "role": "Friction & Invariant Auditor",
+        "status": "REJECTED",
+        "score": 0.62,
+        "reasoning": "Invariant #2 Breach: Proposed trade risk \u20b92000.00 exceeds strict \u20b9150.00 cap.",
+        "checks": {
+          "max_risk_invariant": false,
+          "friction_acceptable": true,
+          "solvency_within_leverage": true
+        }
+      },
+      "Antigravity": {
+        "agent": "Antigravity",
+        "role": "Math Edge & Sizing Governor",
+        "status": "REJECTED",
+        "score": 0.32,
+        "reasoning": "Unfavorable asymmetric edge: R:R ratio 0.50 is below minimum 1:1.5 threshold.",
+        "checks": {
+          "risk_reward_ge_1_5": false,
+          "positive_expectancy": false,
+          "target_greater_than_zero": true
+        }
+      }
+    },
+    "summary": "\u274c <b>VETOED by OpenClaw, Antigravity</b> (Score: 61.4%)",
+    "timestamp": "2026-10-17 21:51:17 IST"
+  }
+]
