@@ -61,6 +61,7 @@ def run_live_strategy_scan(symbols):
             df = yf.download(sym, period="1mo", interval="1d", progress=False)
             if hasattr(df.columns, "levels") and len(df.columns.levels) > 1:
                 df.columns = df.columns.get_level_values(0)
+            df = df.dropna(subset=["Close", "High", "Low"])
 
             if len(df) < 20:
                 print(f"Skipping {sym}: insufficient historical bars ({len(df)} bars)")
@@ -166,6 +167,7 @@ def run_comparative_backtest(symbols):
             df = yf.download(sym, period="3mo", interval="1h", progress=False)
             if hasattr(df.columns, "levels") and len(df.columns.levels) > 1:
                 df.columns = df.columns.get_level_values(0)
+            df = df.dropna(subset=["Close", "High", "Low"])
 
             if len(df) < 50:
                 continue
