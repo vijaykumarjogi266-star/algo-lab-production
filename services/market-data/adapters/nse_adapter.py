@@ -15,6 +15,8 @@ NON-NEGOTIABLE SAFETY CONSTRAINTS:
 from datetime import datetime, timezone
 import json
 import logging
+import os
+import tempfile
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
@@ -245,12 +247,12 @@ class NSELiveMarketDataAdapter(MarketDataProvider):
 
     def fetch_eod_bhavcopy(self, dt: Any, dest_dir: Optional[str] = None) -> Optional[str]:
         """Downloads official NSE EOD Bhavcopy for a given date."""
+        target_dir = dest_dir or tempfile.gettempdir()
         if self.mock_mode:
-            return f"/tmp/bhavcopy_{dt}.csv"
+            return os.path.join(target_dir, f"bhavcopy_{dt}.csv")
         try:
             from jugaad_data.nse import bhavcopy_save
-            dest = dest_dir or "/tmp"
-            path = bhavcopy_save(dt, dest)
+            path = bhavcopy_save(dt, target_dir)
             return path
         except Exception as e:
             logger.error("Failed to download NSE Bhavcopy for %s: %s", dt, e)

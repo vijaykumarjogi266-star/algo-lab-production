@@ -10,6 +10,7 @@ Includes exact Intraday Entry, Stop Loss, Target, and 15:15 IST square-off manda
 """
 
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import json
 import logging
 from pathlib import Path
@@ -27,12 +28,14 @@ from services.scanner.universe_manager import AUTHORITATIVE_NIFTY_50_CONSTITUENT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("LiveIntradayScanner")
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def run_live_intraday_scan() -> Dict[str, Any]:
+    now_ist = datetime.now(IST)
     print("\n" + "=" * 90)
     print(" ⚡ ALGO LAB INSTITUTIONAL LIVE INTRADAY SCANNER (NSE NIFTY 50)")
-    print(f"    Session Date: Monday, October 12, 2026 | Active Time: {datetime.now().strftime('%H:%M:%S IST')}")
+    print(f"    Session Date: {now_ist.strftime('%A, %B %d, %Y')} | Active Time: {now_ist.strftime('%H:%M:%S IST')}")
     print("    Product: MIS (Intraday) | Mandatory Square-Off: 15:15:00 IST")
     print("=" * 90)
 
@@ -45,13 +48,15 @@ def run_live_intraday_scan() -> Dict[str, Any]:
 
     scored_setups: List[Dict[str, Any]] = []
 
+    early_movers: List[Dict[str, Any]] = []
+
     for sym in symbols:
         ticker_key = f"{sym}.NS"
         if ticker_key not in data.columns.levels[0]:
             continue
 
         df = data[ticker_key].dropna()
-        if len(df) < 3: # Need at least 3 bars (15 mins) for ORB
+        if df.empty:
             continue
 
         close = df["Close"].squeeze()
@@ -60,7 +65,7 @@ def run_live_intraday_scan() -> Dict[str, Any]:
         open_p = df["Open"].squeeze()
         volume = df["Volume"].squeeze()
 
-        if close.empty or len(close) < 3:
+        if close.empty:
             continue
 
         current_price = float(close.iloc[-1])
@@ -68,18 +73,37 @@ def run_live_intraday_scan() -> Dict[str, Any]:
         day_high = float(high.max())
         day_low = float(low.min())
         curr_vol = float(volume.iloc[-1]) if not volume.empty else 0.0
+        total_vol = int(volume.sum()) if not volume.empty else 0
 
-        # 1. 15-Minute Opening Range (First 3 bars: 09:15-09:30)
-        orb_high = float(high.iloc[:3].max())
-        orb_low = float(low.iloc[:3].min())
-        orb_range = orb_high - orb_low
+        session_change_pct = ((current_price - day_open) / day_open) * 100.0
 
-        # 2. Intraday VWAP
+        # Typical price VWAP
         typical_price = (high + low + close) / 3.0
         cum_vol = volume.cumsum()
         cum_tp_vol = (typical_price * volume).cumsum()
         vwap_series = cum_tp_vol / (cum_vol + 1e-6)
         current_vwap = float(vwap_series.iloc[-1])
+
+        early_movers.append({
+            "symbol": sym,
+            "sector": sector_map.get(sym, "GENERAL"),
+            "ltp": round(current_price, 2),
+            "open": round(day_open, 2),
+            "high": round(day_high, 2),
+            "low": round(day_low, 2),
+            "chg_pct": round(session_change_pct, 2),
+            "vwap": round(current_vwap, 2),
+            "volume": total_vol,
+            "bars": len(df),
+        })
+
+        if len(df) < 3: # Need at least 3 bars (15 mins) for ORB
+            continue
+
+        # 1. 15-Minute Opening Range (First 3 bars: 09:15-09:30)
+        orb_high = float(high.iloc[:3].max())
+        orb_low = float(low.iloc[:3].min())
+        orb_range = orb_high - orb_low
 
         # 3. 20-period EMA on 5m
         ema_20 = float(close.ewm(span=min(len(close), 20), adjust=False).mean().iloc[-1])
@@ -90,9 +114,6 @@ def run_live_intraday_scan() -> Dict[str, Any]:
         tr3 = (low - close.shift(1)).abs()
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         intraday_atr = float(tr.rolling(min(len(tr), 14)).mean().iloc[-1]) if len(tr) >= 3 else (current_price * 0.005)
-
-        # 5. Session Change %
-        session_change_pct = ((current_price - day_open) / day_open) * 100.0
 
         # 6. Relative Volume on 5m
         avg_5m_vol = float(volume.mean()) if len(volume) > 0 else 1.0
@@ -129,16 +150,13 @@ def run_live_intraday_scan() -> Dict[str, Any]:
             tp_price = round(current_price + (2.0 * sl_dist), 2)
 
         # Circuit Lock & Illiquidity Defense
-        # 1. Reject if session change exceeds 8.5% (approaching 10% or 20% upper/lower circuit limit)
         is_near_circuit = abs(session_change_pct) >= 8.5
-        # 2. Reject if day range is zero or price is extremely low (< ₹25 penny stock trap)
         is_illiquid = (day_high == day_low) or (current_price < 25.0)
 
         if is_near_circuit or is_illiquid:
             continue
 
         if setup_name and sl_price < current_price:
-            # Capital allocation: ₹25,000 per intraday slot
             intraday_slot_capital = 25000.0
             suggested_qty = max(1, int(intraday_slot_capital / current_price))
             risk_inr = round((current_price - sl_price) * suggested_qty, 2)
@@ -167,15 +185,27 @@ def run_live_intraday_scan() -> Dict[str, Any]:
 
     # Sort setups by score descending
     scored_setups.sort(key=lambda x: x["score"], reverse=True)
+    early_movers.sort(key=lambda x: x["chg_pct"], reverse=True)
 
     print("\n" + "=" * 90)
     print(f" 📋 TOP INTRADAY SETUPS PICKED RIGHT NOW (Total Triggered: {len(scored_setups)})")
     print("=" * 90)
-    print(f" {'Symbol':<12} | {'Setup':<20} | {'LTP (₹)':>9} | {'Chg %':>6} | {'VWAP (₹)':>9} | {'SL (₹)':>9} | {'Target (₹)':>10} | {'Qty':>4} | {'Capital (₹)':>10}")
-    print("-" * 90)
-
-    for s in scored_setups[:8]:
-        print(f" {s['symbol']:<12} | {s['setup']:<20} | {s['ltp']:>9.2f} | {s['session_change_pct']:>+5.2f}% | {s['vwap']:>9.2f} | {s['stop_loss']:>9.2f} | {s['take_profit']:>10.2f} | {s['suggested_qty']:>4d} | ₹{s['allocated_capital']:>9,.2f}")
+    if scored_setups:
+        print(f" {'Symbol':<12} | {'Setup':<20} | {'LTP (₹)':>9} | {'Chg %':>6} | {'VWAP (₹)':>9} | {'SL (₹)':>9} | {'Target (₹)':>10} | {'Qty':>4} | {'Capital (₹)':>10}")
+        print("-" * 90)
+        for s in scored_setups[:8]:
+            print(f" {s['symbol']:<12} | {s['setup']:<20} | {s['ltp']:>9.2f} | {s['session_change_pct']:>+5.2f}% | {s['vwap']:>9.2f} | {s['stop_loss']:>9.2f} | {s['take_profit']:>10.2f} | {s['suggested_qty']:>4d} | ₹{s['allocated_capital']:>9,.2f}")
+    else:
+        print("  ℹ️ 15-Minute Opening Range (09:15-09:30 IST) is currently forming (< 3 bars).")
+        if early_movers:
+            print("\n  🔥 EARLY MARKET MOMENTUM LEADERS (Top Gainers & Losers Right Now):")
+            print(f"   {'Symbol':<12} | {'LTP (₹)':>9} | {'Chg %':>7} | {'VWAP (₹)':>9} | {'Volume':>12} | {'Bars':>4}")
+            print("   " + "-" * 70)
+            for m in early_movers[:5]:
+                print(f"   {m['symbol']:<12} | {m['ltp']:>9.2f} | {m['chg_pct']:>+6.2f}% | {m['vwap']:>9.2f} | {m['volume']:>12,d} | {m['bars']:>4d}")
+            print("   " + "-" * 70)
+            for m in early_movers[-3:]:
+                print(f"   {m['symbol']:<12} | {m['ltp']:>9.2f} | {m['chg_pct']:>+6.2f}% | {m['vwap']:>9.2f} | {m['volume']:>12,d} | {m['bars']:>4d}")
 
     print("-" * 90)
     print("\n[PHASE 2] INTRADAY EXECUTION RULES (MIS):")
@@ -188,9 +218,10 @@ def run_live_intraday_scan() -> Dict[str, Any]:
     out_file = BASE_DIR / "data" / "live_intraday_picked_stocks.json"
     out_data = {
         "scan_timestamp": datetime.now(timezone.utc).isoformat(),
-        "market_time_ist": datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
+        "market_time_ist": datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
         "total_setups": len(scored_setups),
         "top_setups": scored_setups[:10],
+        "early_movers": early_movers[:10],
     }
     with open(out_file, "w") as f:
         json.dump(out_data, f, indent=2)
@@ -201,4 +232,20 @@ def run_live_intraday_scan() -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    run_live_intraday_scan()
+    import argparse
+    import time
+    parser = argparse.ArgumentParser(description="Algo Lab Institutional Live Intraday Scanner")
+    parser.add_argument("--loop", action="store_true", help="Run scanner continuously in a loop")
+    parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60)")
+    args = parser.parse_args()
+
+    if args.loop:
+        print(f"[*] Starting continuous live intraday scanner (Interval: {args.interval}s)...")
+        try:
+            while True:
+                run_live_intraday_scan()
+                time.sleep(args.interval)
+        except (KeyboardInterrupt, SystemExit):
+            print("\n[*] Live intraday scanner stopped by user.")
+    else:
+        run_live_intraday_scan()

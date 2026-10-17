@@ -15,6 +15,12 @@ from zoneinfo import ZoneInfo
 # Indian Standard Time (IST)
 IST_TZ = ZoneInfo("Asia/Kolkata")
 
+from services.data_governance.calendar_provider import (
+    CalendarProvider,
+    VersionedMarketCalendarProvider,
+    default_calendar_provider,
+)
+
 # Standard NSE/BSE Equity Session Times (IST)
 SESSION_PRE_OPEN_START = time(9, 0)
 SESSION_PRE_OPEN_END = time(9, 8)
@@ -23,38 +29,16 @@ SESSION_END_TIME = time(15, 30)
 SESSION_POST_CLOSE_START = time(15, 40)
 SESSION_POST_CLOSE_END = time(16, 0)
 
-# Sample Official NSE Holidays for 2024-2026 (Republic Day, Holi, Independence Day, Diwali, etc.)
-OFFICIAL_HOLIDAYS_NSE: Set[date] = {
-    date(2024, 1, 26),  # Republic Day
-    date(2024, 3, 8),   # Mahashivratri
-    date(2024, 3, 25),  # Holi
-    date(2024, 4, 11),  # Id-Ul-Fitr
-    date(2024, 4, 17),  # Shri Ram Navami
-    date(2024, 5, 1),   # Maharashtra Day
-    date(2024, 6, 17),  # Bakri Id
-    date(2024, 7, 17),  # Muharram
-    date(2024, 8, 15),  # Independence Day
-    date(2024, 10, 2),  # Mahatma Gandhi Jayanti
-    date(2024, 11, 1),  # Diwali Laxmi Pujan
-    date(2024, 11, 15), # Gurunanak Jayanti
-    date(2024, 12, 25), # Christmas
-    # 2025
-    date(2025, 1, 26),
-    date(2025, 8, 15),
-    date(2025, 10, 2),
-    date(2025, 12, 25),
-    # 2026
-    date(2026, 1, 26),
-    date(2026, 8, 15),
-    date(2026, 10, 2),
-    date(2026, 12, 25),
-}
+OFFICIAL_HOLIDAYS_NSE: Set[date] = VersionedMarketCalendarProvider.DEFAULT_HOLIDAYS
 
 
 class IndianMarketCalendar:
-    """Provides authoritative validation for Indian market sessions."""
+    """Provides authoritative validation for Indian market sessions via Versioned Calendar Provider."""
 
-    def __init__(self, custom_holidays: Optional[Set[date]] = None):
+    def __init__(self, custom_holidays: Optional[Set[date]] = None, provider: Optional[CalendarProvider] = None):
+        self.provider = provider or (
+            VersionedMarketCalendarProvider(holidays=custom_holidays) if custom_holidays else default_calendar_provider
+        )
         self.holidays = custom_holidays or OFFICIAL_HOLIDAYS_NSE
 
     def is_trading_day(self, dt: datetime | date) -> bool:

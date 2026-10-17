@@ -16,7 +16,8 @@ Scanning Modules:
 4. Output: Structured console report and saved JSON watchlist at data/tomorrow_scanner_watchlist.json.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 import json
 import logging
 from pathlib import Path
@@ -31,15 +32,28 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from services.scanner.universe_manager import AUTHORITATIVE_NIFTY_50_CONSTITUENTS
+from services.data_governance.calendar_provider import VersionedMarketCalendarProvider
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("PreMarketScanner")
+IST = ZoneInfo("Asia/Kolkata")
+
+
+def get_next_trading_session_date() -> datetime.date:
+    cal = VersionedMarketCalendarProvider()
+    now_ist = datetime.now(IST)
+    cand_date = (now_ist + timedelta(days=1)).date() if now_ist.time() >= datetime.strptime("15:30", "%H:%M").time() else now_ist.date()
+    while not cal.is_trading_day(cand_date):
+        cand_date += timedelta(days=1)
+    return cand_date
 
 
 def run_pre_market_scan() -> Dict[str, Any]:
+    next_session = get_next_trading_session_date()
+    formatted_date = next_session.strftime("%A, %B %d, %Y")
     print("\n" + "=" * 80)
     print(" 🛰️  ALGO LAB INSTITUTIONAL PRE-MARKET SCANNER (NSE NIFTY 50)")
-    print("    Session Preparation: Monday, October 12, 2026 | Capital: ₹1,00,000 INR")
+    print(f"    Session Preparation: {formatted_date} | Capital: ₹1,00,000 INR")
     print("=" * 80)
 
     symbols = [item["symbol"] for item in AUTHORITATIVE_NIFTY_50_CONSTITUENTS]
@@ -167,7 +181,7 @@ def run_pre_market_scan() -> Dict[str, Any]:
     watchlist_path = BASE_DIR / "data" / "tomorrow_scanner_watchlist.json"
     watchlist_data = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "market_session_date": "2026-10-12",
+        "market_session_date": next_session.isoformat(),
         "universe": "NIFTY_50",
         "capital_allocated_inr": 100000.0,
         "max_concurrent_slots": 2,

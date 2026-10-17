@@ -1,0 +1,47 @@
+name: Release Candidate Gate & Packaging
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release-package:
+    name: Package Release & Generate Evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-pinned.txt
+          pip install -e .
+
+      - name: Run Full Release Check
+        run: make release-check
+
+      - name: Generate SPDX SBOM
+        run: python3 scripts/generate_sbom.py
+
+      - name: Build and Tag Release Container
+        run: |
+          docker build \
+            --file docker/Dockerfile.api \
+            --tag algolab-api:${{ github.ref_name }} \
+            .
+
+      - name: Archive Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ github.ref_name }}
+          path: |
+            data/sbom.spdx.json
+            RELEASE_EVIDENCE.md
+            requirements-pinned.txt

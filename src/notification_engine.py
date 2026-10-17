@@ -108,6 +108,9 @@ class DiscordWebhookNotifier:
 
     def _send_http_json(self, url: str, payload: dict) -> bool:
         """Sends JSON payload over HTTP/HTTPS with strict timeout and exception fencing."""
+        if not (url.startswith("http://") or url.startswith("https://")):
+            print(f"[NOTIFICATION WARNING] Insecure or invalid webhook scheme: {url}")
+            return False
         try:
             req_data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(
@@ -119,7 +122,7 @@ class DiscordWebhookNotifier:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # nosec B310
                 status = resp.status
                 return 200 <= status < 300
         except urllib.error.HTTPError as e:

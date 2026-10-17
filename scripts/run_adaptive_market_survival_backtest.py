@@ -147,6 +147,7 @@ def run_5year_swing_backtest(
         sector_map=sector_map,                # Institutional sector concentration guard
         max_drawdown_limit_pct=max_drawdown_limit, # Portfolio circuit breaker
         strategy=strategy,
+        enable_technical_exit=enable_tech_exit,
     )
 
     results = engine.run_backtest(datasets)
@@ -292,7 +293,7 @@ def main():
     parser.add_argument("--strategy", type=str, choices=["STRATEGY_SUPER_ADAPTIVE", "STRATEGY_A", "STRATEGY_B", "STRATEGY_C", "STRATEGY_D", "STRATEGY_E"], default="STRATEGY_SUPER_ADAPTIVE", help="Trading strategy (default: STRATEGY_SUPER_ADAPTIVE)")
     parser.add_argument("--max-positions", type=int, default=3, help="Max concurrent positions (default: 3)")
     parser.add_argument("--max-drawdown", type=float, default=0.150, help="Max drawdown circuit breaker limit (default: 0.150)")
-    parser.add_argument("--tech-exit", action="store_true", default=False, help="Enable early technical RSI exit (default: False)")
+    parser.add_argument("--enable-tech-exit", "--tech-exit", dest="tech_exit", action="store_true", default=False, help="Enable early technical RSI exit (default: False)")
     parser.add_argument("--refresh", action="store_true", default=False, help="Force refresh daily datasets from yfinance")
     args = parser.parse_args()
 

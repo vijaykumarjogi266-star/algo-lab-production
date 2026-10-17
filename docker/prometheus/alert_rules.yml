@@ -1,0 +1,133 @@
+# Algo Lab Canonical Prometheus Alerting Rules
+# Workstream D / Phase 5: Deployment Resilience & Operations
+# Production alert definitions enforcing safety invariants, daemon health, risk boundaries, and security
+
+groups:
+  - name: algolab_deployment_resilience_alerts
+    rules:
+      - alert: ApiLivenessFailure
+        expr: up{job="algolab-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          tier: platform
+          service: api
+        annotations:
+          summary: "API liveness failure: /health endpoint unreachable"
+          description: "Algo Lab REST API service is down or failing HTTP /health liveness probes on instance {{ $labels.instance }} for over 1 minute."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#1-apilivenessfailure"
+          impact: "Web UI, client commands, and automated health checks cannot communicate with the core API."
+          action: "Check container logs with 'docker logs algolab-api' and verify database connectivity."
+
+      - alert: DaemonHeartbeatLost
+        expr: >-
+          (time() - algolab_daemon_heartbeat_timestamp > 300)
+          and on() (
+            (hour() == 3 and minute() >= 45)
+            or (hour() > 3 and hour() < 10)
+            or (hour() == 10 and minute() <= 0)
+          )
+          and on() (day_of_week() >= 1 and day_of_week() <= 5)
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          tier: trading
+          service: live-market-daemon
+        annotations:
+          summary: "Daemon heartbeat lost during active NSE market hours (09:15-15:30 IST)"
+          description: "live_market_daemon.py heartbeat timestamp is older than 5 minutes ({{ $value }}s) during Indian trading hours. Autonomous execution loop may have crashed or stalled."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#2-daemonheartbeatlost"
+          impact: "Intraday/EOD signals cannot execute, leading to unhedged exposures or missed risk exits."
+          action: "Check systemd service: 'sudo systemctl status quant-os.service' and tail daemon logs in logs/daemon.log."
+
+      - alert: CircuitBreakerTripped
+        expr: algolab_circuit_breaker_active == 1
+        for: 0m
+        labels:
+          severity: critical
+          priority: P0
+          tier: risk
+          service: risk-engine
+        annotations:
+          summary: "Global risk circuit breaker tripped"
+          description: "Global risk circuit breaker active (algolab_circuit_breaker_active = 1). All trading activities halted immediately."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#3-circuitbreakertripped"
+          impact: "All order generation and execution halted to preserve capital. No new trades allowed."
+          action: "Execute 'make safety-check', inspect active drawdowns, and review data/live_portfolio_state.json."
+
+      - alert: PaperOnlyViolationAttempt
+        expr: algolab_live_trading_enabled == 1
+        for: 0m
+        labels:
+          severity: critical
+          priority: P0
+          tier: compliance
+          service: safety-guard
+        annotations:
+          summary: "CRITICAL: Paper-only invariant violation attempt detected"
+          description: "Live trading flag algolab_live_trading_enabled is set to 1! Algo Lab is strictly paper-only. System must halt immediately."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#4-paperonlyviolationattempt"
+          impact: "Rogue process or configuration attempting real capital deployment or live exchange routing."
+          action: "Execute emergency halt: 'sudo systemctl stop quant-os.service' and audit environment settings."
+
+      - alert: DataStalenessSpike
+        expr: increase(algolab_stale_data_rejections_total[5m]) > 10
+        for: 0m
+        labels:
+          severity: warning
+          priority: P2
+          tier: data-quality
+          service: market-data
+        annotations:
+          summary: "Stale market data rejection rate spike (>10 in 5m)"
+          description: "Market data quality filter rejected {{ $value }} stale ticks/bars over the past 5 minutes. Market data feed may be lagging or disconnected."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#5-datastalenessspike"
+          impact: "Decision engine falling back to cash or rejecting trade signals due to data staleness gates."
+          action: "Check market data provider websocket connection, egress latency, and verify upstream feed freshness."
+
+      - alert: RiskRejectionSpike
+        expr: increase(algolab_risk_rejections_total[5m]) > 20
+        for: 0m
+        labels:
+          severity: warning
+          priority: P2
+          tier: risk
+          service: risk-engine
+        annotations:
+          summary: "Independent risk engine rejection spike (>20 in 5m)"
+          description: "Risk engine rejected {{ $value }} signals in the last 5 minutes due to exposure, leverage, or concentration limits."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#6-riskrejectionspike"
+          impact: "Strategies generating un-executable signals; potential runaway signal generation loop."
+          action: "Inspect risk engine audit logs, verify order sizing parameters, and examine potential runaway signal generation."
+
+      - alert: BackupFailure
+        expr: algolab_backup_restore_drill_status == 0 or increase(algolab_backup_restore_drill_failures_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          priority: P2
+          tier: disaster-recovery
+          service: backup-restore
+        annotations:
+          summary: "Disaster recovery backup or restore drill failed"
+          description: "Automated backup verification or sandbox restore drill has failed (status=0 or failure count increased). Ledger state may be unrecoverable."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#7-backupfailure"
+          impact: "RPO/RTO SLA breached. Loss of verified disaster recovery capability."
+          action: "Run manual backup drill: 'python3 scripts/backup_restore.py --test-restore' and check disk capacity."
+
+      - alert: AuthorizationFailureSpike
+        expr: increase(algolab_http_auth_failures_total[5m]) > 10 or rate(http_requests_total{status=~"401|403"}[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: high
+          priority: P1
+          tier: security
+          service: api-gateway
+        annotations:
+          summary: "Authentication/Authorization failure rate spike (401/403)"
+          description: "Observed elevated unauthorized/forbidden (401/403) requests over 5 minutes. Potential credential stuffing, brute force, or token leak detected."
+          runbook_url: "docs/runbooks/INCIDENT_RESPONSE_AND_ALERTS.md#8-authorizationfailurespike"
+          impact: "Security boundary under active probe or client configuration error causing denial of service."
+          action: "Inspect Nginx access log (/var/log/nginx/access.log) and identify/block offending client IPs."

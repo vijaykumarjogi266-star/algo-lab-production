@@ -55,7 +55,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-from apps.api.core.security import InternalAuthMiddleware
+from apps.api.core.security import InternalAuthMiddleware, SecurityHeadersMiddleware
+
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS configuration
 app.add_middleware(
@@ -105,7 +108,9 @@ async def root():
     return {
         "name": settings.PROJECT_NAME,
         "version": settings.PROJECT_VERSION,
+        "lifecycle_state": settings.LIFECYCLE_STATE,
         "stage": "Stage 1: Foundation",
+        "paper_only": settings.PAPER_ONLY,
         "description": "Systematic research and decision platform for Indian markets",
         "research_ui_url": "/research",
         "principles_url": f"{settings.API_V1_PREFIX}/system/principles",

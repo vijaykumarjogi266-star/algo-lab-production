@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp_utc": "2026-10-14T17:06:47.391303+00:00",
+    "hostname": "apiconnect.angelone.in",
+    "port": 443,
+    "dns_resolution": "SUCCESS (103.82.178.77)",
+    "tcp_success": false,
+    "tls_success": false,
+    "failure_category": "TCP_TIMEOUT",
+    "duration_ms": 5006,
+    "cert_info": null
+  },
+  {
+    "timestamp_utc": "2026-10-14T17:06:52.397693+00:00",
+    "hostname": "smartapisocket.angelone.in",
+    "port": 443,
+    "dns_resolution": "SUCCESS (103.82.178.36)",
+    "tcp_success": false,
+    "tls_success": false,
+    "failure_category": "TCP_TIMEOUT",
+    "duration_ms": 5004,
+    "cert_info": null
+  },
+  {
+    "timestamp_utc": "2026-10-14T17:06:57.402085+00:00",
+    "hostname": "margincalculator.angelone.in",
+    "port": 443,
+    "dns_resolution": "SUCCESS (35.154.179.253)",
+    "tcp_success": true,
+    "tls_success": true,
+    "failure_category": "NONE",
+    "duration_ms": 184,
+    "cert_info": {
+      "organizationName": "Angel One Limited",
+      "commonName": "*.angelone.in"
+    }
+  }
+]

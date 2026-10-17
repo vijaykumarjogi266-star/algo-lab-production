@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "algo-lab"
-version = "0.1.0"
-description = "Algo Lab: Quantitative Investment and Trading Research Operating System for Indian Markets"
+version = "0.3.0"
+description = "Algo Lab: Paper-Only Quantitative Investment Research and Forward-Simulation Platform for Indian Markets"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -14,7 +14,7 @@ authors = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["apps*", "services*", "quant*", "data*", "database*"]
+include = ["apps*", "services*", "quant*", "data*", "database*", "src*"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -24,3 +24,18 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["apps", "services", "src", "quant"]
+omit = ["tests/*", ".venv/*", "apps/web/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true

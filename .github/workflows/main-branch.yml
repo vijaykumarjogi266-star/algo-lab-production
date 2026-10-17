@@ -1,0 +1,61 @@
+name: Main Branch Verification & Integration
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: main-build
+  cancel-in-progress: false
+
+jobs:
+  main-release-gate:
+    name: Main Branch Canonical Release Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install locked dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-pinned.txt
+          pip install -e .
+
+      - name: Execute Canonical Release Gate (make release-check)
+        run: make release-check
+
+      - name: Upload SPDX SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-spdx-sbom
+          path: data/sbom.spdx.json
+
+  main-container-build:
+    name: Container Build & Non-Root Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker API Image
+        run: |
+          docker build \
+            --file docker/Dockerfile.api \
+            --tag algolab-api:main \
+            .
+
+      - name: Verify Non-Root Execution
+        run: |
+          USER_ID=$(docker run --rm algolab-api:main id -u)
+          if [ "$USER_ID" -ne 10001 ]; then
+            echo "❌ Container security failure: running as UID $USER_ID, expected 10001"
+            exit 1
+          fi
+          echo "✅ Non-root UID 10001 verified"

@@ -38,10 +38,13 @@ import json
 import sqlite3
 import signal
 import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Optional, Dict, Any, List
+
+IST = ZoneInfo("Asia/Kolkata")
 
 BASE_DIR = Path(__file__).resolve().parent
 venv_python = BASE_DIR / ".venv" / "bin" / "python3"
@@ -124,6 +127,7 @@ class ActiveSwingPosition:
     holding_period_days: int = 1
     product_type: str = "DELIVERY"
     breakeven_activated: bool = False
+    buy_friction: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -136,6 +140,91 @@ def round_inr(val: Decimal) -> Decimal:
     return val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def calculate_buy_statutory_friction(
+    buy_price: float,
+    quantity: int
+) -> Dict[str, float]:
+    """
+    Calculates Indian Equity Delivery (CNC / Swing Trading) BUY leg statutory friction:
+    - Brokerage: ₹0.00 (Standard zero brokerage delivery model)
+    - STT: 0.1% on Buy leg
+    - Stamp Duty: 0.015% on Buy leg
+    - Exchange Txn Fee: 0.00297% on buy turnover
+    - SEBI Turnover Fee: 0.0001% on buy turnover
+    - GST: 18% on Brokerage + Exchange + SEBI
+    """
+    d_buy = Decimal(str(round(buy_price, 2)))
+    d_qty = Decimal(quantity)
+    buy_turnover = round_inr(d_buy * d_qty)
+
+    brokerage = Decimal("0.00")
+    stt = round_inr(buy_turnover * Decimal("0.0010"))
+    stamp_duty = round_inr(buy_turnover * Decimal("0.00015"))
+    exchange_fee = round_inr(buy_turnover * Decimal("0.0000297"))
+    sebi_fee = round_inr(buy_turnover * Decimal("0.0000010"))
+
+    taxable_services = brokerage + exchange_fee + sebi_fee
+    gst = round_inr(taxable_services * Decimal("0.18"))
+
+    total_charges = brokerage + stt + exchange_fee + sebi_fee + stamp_duty + gst
+
+    return {
+        "turnover": float(buy_turnover),
+        "brokerage": float(brokerage),
+        "stt": float(stt),
+        "stamp_duty": float(stamp_duty),
+        "dp_charge": 0.0,
+        "exchange_txn_fee": float(exchange_fee),
+        "sebi_fee": float(sebi_fee),
+        "gst": float(gst),
+        "total_charges": float(total_charges),
+    }
+
+
+def calculate_sell_statutory_friction(
+    sell_price: float,
+    quantity: int
+) -> Dict[str, float]:
+    """
+    Calculates Indian Equity Delivery (CNC / Swing Trading) SELL leg statutory friction:
+    - Brokerage: ₹0.00
+    - STT: 0.1% on Sell leg
+    - Stamp Duty: ₹0.00 (Buy leg only)
+    - DP Charge: Flat ₹13.50 base depository fee
+    - Exchange Txn Fee: 0.00297% on sell turnover
+    - SEBI Turnover Fee: 0.0001% on sell turnover
+    - GST: 18% on Brokerage + Exchange + SEBI + DP Charge base (₹13.50 * 0.18 = ₹2.43)
+      -> Total DP inclusive of GST: ₹15.93
+    """
+    d_sell = Decimal(str(round(sell_price, 2)))
+    d_qty = Decimal(quantity)
+    sell_turnover = round_inr(d_sell * d_qty)
+
+    brokerage = Decimal("0.00")
+    stt = round_inr(sell_turnover * Decimal("0.0010"))
+    stamp_duty = Decimal("0.00")
+    dp_base = Decimal("13.50")
+    exchange_fee = round_inr(sell_turnover * Decimal("0.0000297"))
+    sebi_fee = round_inr(sell_turnover * Decimal("0.0000010"))
+
+    taxable_services = brokerage + exchange_fee + sebi_fee + dp_base
+    gst = round_inr(taxable_services * Decimal("0.18"))
+
+    total_charges = brokerage + stt + exchange_fee + sebi_fee + dp_base + gst
+
+    return {
+        "turnover": float(sell_turnover),
+        "brokerage": float(brokerage),
+        "stt": float(stt),
+        "stamp_duty": float(stamp_duty),
+        "dp_charge": 15.93,
+        "exchange_txn_fee": float(exchange_fee),
+        "sebi_fee": float(sebi_fee),
+        "gst": float(gst),
+        "total_charges": float(total_charges),
+    }
+
+
 def calculate_delivery_statutory_friction(
     buy_price: float,
     sell_price: float,
@@ -143,44 +232,24 @@ def calculate_delivery_statutory_friction(
 ) -> Dict[str, float]:
     """
     Enforces Indian Equity Delivery (CNC / Swing Trading) statutory friction using Decimal ROUND_HALF_UP:
-    - Brokerage: ₹0.00 (Standard zero brokerage delivery model)
-    - STT: 0.1% on both Buy and Sell legs
-    - Stamp Duty: 0.015% on Buy leg only
-    - DP Charge: Flat ₹15.34 applied only on Sell leg
-    - Exchange Txn Fee: 0.00297% on total turnover
-    - SEBI Turnover Fee: 0.0001% on total turnover
-    - GST: 18% applied to Brokerage + Exchange + SEBI + DP Charge
+    Aggregates both Buy and Sell leg charges without double counting or omission.
     """
-    d_buy = Decimal(str(round(buy_price, 2)))
-    d_sell = Decimal(str(round(sell_price, 2)))
-    d_qty = Decimal(quantity)
-
-    buy_turnover = round_inr(d_buy * d_qty)
-    sell_turnover = round_inr(d_sell * d_qty)
-    total_turnover = buy_turnover + sell_turnover
-
-    brokerage = Decimal("0.00")
-    stt = round_inr(total_turnover * Decimal("0.0010"))
-    stamp_duty = round_inr(buy_turnover * Decimal("0.00015"))
-    dp_charge = Decimal("15.34")
-    exchange_fee = round_inr(total_turnover * Decimal("0.0000297"))
-    sebi_fee = round_inr(total_turnover * Decimal("0.0000010"))
-
-    taxable_services = brokerage + exchange_fee + sebi_fee + dp_charge
-    gst = round_inr(taxable_services * Decimal("0.18"))
-
-    total_charges = brokerage + stt + exchange_fee + sebi_fee + stamp_duty + dp_charge + gst
+    buy_f = calculate_buy_statutory_friction(buy_price, quantity)
+    sell_f = calculate_sell_statutory_friction(sell_price, quantity)
+    total_charges = round(buy_f["total_charges"] + sell_f["total_charges"], 2)
 
     return {
-        "turnover": float(total_turnover),
-        "brokerage": float(brokerage),
-        "stt": float(stt),
-        "stamp_duty": float(stamp_duty),
-        "dp_charge": float(dp_charge),
-        "exchange_txn_fee": float(exchange_fee),
-        "sebi_fee": float(sebi_fee),
-        "gst": float(gst),
-        "total_charges": float(total_charges),
+        "turnover": round(buy_f["turnover"] + sell_f["turnover"], 2),
+        "brokerage": 0.0,
+        "stt": round(buy_f["stt"] + sell_f["stt"], 2),
+        "stamp_duty": buy_f["stamp_duty"],
+        "dp_charge": sell_f["dp_charge"],
+        "exchange_txn_fee": round(buy_f["exchange_txn_fee"] + sell_f["exchange_txn_fee"], 2),
+        "sebi_fee": round(buy_f["sebi_fee"] + sell_f["sebi_fee"], 2),
+        "gst": round(buy_f["gst"] + sell_f["gst"], 2),
+        "total_charges": total_charges,
+        "buy_friction": buy_f["total_charges"],
+        "sell_friction": sell_f["total_charges"],
     }
 
 
@@ -442,6 +511,7 @@ class SwingSQLiteLedger:
             positions = {}
             for pr in pos_rows:
                 p = dict(pr)
+                buy_f = calculate_buy_statutory_friction(float(p["entry_price"]), int(p["quantity"]))["total_charges"]
                 positions[p["symbol"]] = ActiveSwingPosition(
                     symbol=p["symbol"],
                     sector=p.get("sector", "GENERAL"),
@@ -454,6 +524,7 @@ class SwingSQLiteLedger:
                     entry_time=str(p["entry_time"]),
                     holding_period_days=int(p.get("holding_period_days", 1)),
                     product_type=p.get("product_type", "DELIVERY"),
+                    buy_friction=float(p.get("buy_friction", buy_f)),
                 )
             state["positions"] = positions
 
@@ -461,6 +532,25 @@ class SwingSQLiteLedger:
             trades_count = conn.execute("SELECT COUNT(*) FROM trade_journal WHERE account_id = ?", (account_id,)).fetchone()[0]
             state["completed_trades_count"] = trades_count
             return state
+
+    def load_completed_trades(self, account_id: str, limit: int = 500) -> List[Dict[str, Any]]:
+        """Loads historical completed trades from SQLite trade journal."""
+        with self._get_connection() as conn:
+            rows = conn.execute("""
+                SELECT symbol, direction, quantity, entry_price, exit_price,
+                       gross_pnl, net_pnl, total_friction, dp_charge,
+                       exit_reason, entry_time, exit_time, product_type
+                FROM trade_journal
+                WHERE account_id = ?
+                ORDER BY exit_time ASC
+                LIMIT ?
+            """, (account_id, limit)).fetchall()
+            trades = []
+            for r in rows:
+                t = dict(r)
+                t["friction"] = t.get("total_friction", 0.0)
+                trades.append(t)
+            return trades
 
 
 class LiveAlgoLabDaemon:
@@ -593,6 +683,7 @@ class LiveAlgoLabDaemon:
             self.peak_capital = float(sqlite_state["peak_capital"])
             self.net_pnl = float(sqlite_state["net_pnl"])
             self.positions = sqlite_state.get("positions", {})
+            self.completed_trades = self.sqlite_ledger.load_completed_trades(self.account_id)
             return
 
         if self.state_file.exists():
@@ -612,6 +703,7 @@ class LiveAlgoLabDaemon:
             self.equity = float(validated["equity"])
             self.positions = {}
             for sym, pos_data in validated.get("positions", {}).items():
+                buy_f = calculate_buy_statutory_friction(float(pos_data.get("entry_price", 0.0)), int(pos_data.get("quantity", 0)))["total_charges"]
                 self.positions[sym] = ActiveSwingPosition(
                     symbol=sym,
                     sector=pos_data.get("sector", "GENERAL"),
@@ -624,7 +716,9 @@ class LiveAlgoLabDaemon:
                     entry_time=str(pos_data.get("entry_time", "")),
                     holding_period_days=int(pos_data.get("holding_period_days", 1)),
                     product_type="DELIVERY",
+                    buy_friction=float(pos_data.get("buy_friction", buy_f)),
                 )
+            self.completed_trades = validated.get("completed_trades", [])
         else:
             self.account_id = CANONICAL_ACCOUNT_ID
             self.session_id = "STAGE31_FORWARD_PAPER_20260928_001"
@@ -634,6 +728,7 @@ class LiveAlgoLabDaemon:
             self.peak_capital = self.initial_capital
             self.net_pnl = 0.0
             self.positions = {}
+            self.completed_trades = []
             self.save_state()
 
     def save_state(self):
@@ -666,7 +761,9 @@ class LiveAlgoLabDaemon:
             "product_type": "DELIVERY",
         }
         validated = validate_canonical_state(state)
-        self.state_file.write_text(json.dumps(validated, indent=2), encoding="utf-8")
+        temp_file = self.state_file.with_suffix(".tmp")
+        temp_file.write_text(json.dumps(validated, indent=2), encoding="utf-8")
+        temp_file.replace(self.state_file)
 
         # Persist to SQLite ledger
         self.sqlite_ledger.persist_overnight_state(
@@ -693,8 +790,7 @@ class LiveAlgoLabDaemon:
 
     @staticmethod
     def get_ist_now() -> datetime.datetime:
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
-        return now_utc + datetime.timedelta(hours=5, minutes=30)
+        return datetime.datetime.now(IST)
 
     @classmethod
     def is_nse_trading_day(cls, dt: datetime.datetime | datetime.date) -> bool:
@@ -717,13 +813,13 @@ class LiveAlgoLabDaemon:
 
     @classmethod
     def get_next_market_start_ist(cls, now_ist: datetime.datetime) -> datetime.datetime:
-        """Calculates the exact 15:00:00 IST timestamp for the next trading session."""
+        """Calculates the exact 15:00:00 IST timestamp for the next official NSE trading session."""
         target = now_ist.replace(hour=15, minute=0, second=0, microsecond=0)
-        if cls.is_market_day(now_ist) and now_ist < target:
+        if cls.is_nse_trading_day(now_ist) and now_ist < target:
             return target
 
         target += datetime.timedelta(days=1)
-        while target.weekday() >= 5:
+        while not cls.is_nse_trading_day(target):
             target += datetime.timedelta(days=1)
         return target
 
@@ -941,15 +1037,20 @@ class LiveAlgoLabDaemon:
                         exit_reason = "CFI_FIBONACCI_CROSS_EXIT"
 
             if exit_reason:
-                # Close position with statutory delivery friction (including ₹15.34 DP charge)
+                # Close position with statutory delivery friction (including ₹15.93 DP charge)
                 friction_info = calculate_delivery_statutory_friction(
                     buy_price=pos.entry_price,
                     sell_price=current_price,
                     quantity=pos.quantity
                 )
+                sell_friction_info = calculate_sell_statutory_friction(
+                    sell_price=current_price,
+                    quantity=pos.quantity
+                )
                 gross_pnl = round((current_price - pos.entry_price) * pos.quantity, 2)
                 net_pnl = round(gross_pnl - friction_info["total_charges"], 2)
-                recovered_cash = round((pos.quantity * current_price) - friction_info["total_charges"], 2)
+                # Recovered cash = gross sell proceeds minus sell-side friction (buy friction was paid on entry)
+                recovered_cash = round((pos.quantity * current_price) - sell_friction_info["total_charges"], 2)
 
                 self.cash = round(self.cash + recovered_cash, 2)
                 self.net_pnl = round(self.net_pnl + net_pnl, 2)
@@ -1007,7 +1108,7 @@ class LiveAlgoLabDaemon:
                 if sym in self.positions:
                     continue
 
-                sector = self.sector_map.get(sym, "GENERAL")
+                sector = self.universe_manager.get_sector(sym)
                 active_sectors = [p.sector for p in self.positions.values()]
                 if sector in active_sectors:
                     continue
@@ -1046,7 +1147,11 @@ class LiveAlgoLabDaemon:
                         continue
 
                     cost = round(qty * price, 2)
-                    if cost <= self.cash - 5000.0:
+                    buy_friction_info = calculate_buy_statutory_friction(price, qty)
+                    buy_friction = buy_friction_info["total_charges"]
+                    total_outlay = round(cost + buy_friction, 2)
+
+                    if total_outlay <= self.cash - 5000.0:
                         new_pos = ActiveSwingPosition(
                             symbol=sym,
                             sector=sector,
@@ -1059,11 +1164,12 @@ class LiveAlgoLabDaemon:
                             entry_time=timestamp_str,
                             holding_period_days=1,
                             product_type="DELIVERY",
+                            buy_friction=buy_friction,
                         )
                         setattr(new_pos, "initial_sl", stop_loss)
                         setattr(new_pos, "highest_high", price)
                         self.positions[sym] = new_pos
-                        self.cash = round(self.cash - cost, 2)
+                        self.cash = round(self.cash - total_outlay, 2)
                         trade_record = {
                             "symbol": sym,
                             "sector": sector,
@@ -1073,6 +1179,7 @@ class LiveAlgoLabDaemon:
                             "stop_loss": stop_loss,
                             "take_profit": take_profit,
                             "allocated_capital": cost,
+                            "buy_friction": buy_friction,
                             "entry_time": timestamp_str,
                             "product_type": "DELIVERY",
                         }

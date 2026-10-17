@@ -1,9 +1,9 @@
 {
   "account_id": "ACC-FORWARD-CANONICAL-100K-01",
   "session_id": "STAGE31_FORWARD_PAPER_20260928_001",
-  "market_date": "2026-10-12",
+  "market_date": "2026-10-16",
   "schema_version": "1.0.0",
-  "state_timestamp": "2026-10-12T10:00:54.081020+00:00",
+  "state_timestamp": "2026-10-16T10:00:38.239713+00:00",
   "cash": 100000.0,
   "equity": 100000.0,
   "peak_capital": 100000.0,

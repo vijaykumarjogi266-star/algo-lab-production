@@ -158,7 +158,7 @@ def simulate_ticks_sequence(trailing_engine: TrailingStopEngine):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Algo Lab Intraday Paper Trading Monitor")
-    parser.add_argument("--session-id", default="sess_e22e8042bc25", help="Session ID to monitor")
+    parser.add_argument("--session-id", default=None, help="Session ID to monitor (defaults to latest)")
     parser.add_argument("--cycle", action="store_true", help="Run a single live tick cycle")
     parser.add_argument("--simulate-ticks", action="store_true", help="Run simulated tick stream demonstration")
     parser.add_argument("--square-off", action="store_true", help="Auto square-off all open positions immediately")

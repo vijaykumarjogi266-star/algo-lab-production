@@ -231,7 +231,8 @@ class AdaptiveMarketSurvivalBacktester:
         stop_loss_atr_multiplier: float = 2.5,
         take_profit_risk_multiplier: float = 3.5,
         dp_charge_flat: Decimal = Decimal("15.34"),
-        strategy: str = "STRATEGY_A"
+        strategy: str = "STRATEGY_A",
+        enable_technical_exit: bool = False,
     ):
         self.initial_capital = initial_capital
         self.max_capital_per_position = max_capital_per_position
@@ -247,6 +248,7 @@ class AdaptiveMarketSurvivalBacktester:
         self.take_profit_risk_multiplier = take_profit_risk_multiplier
         self.dp_charge_flat = dp_charge_flat
         self.strategy = strategy
+        self.enable_technical_exit = enable_technical_exit
 
     def run_backtest(
         self,
@@ -362,12 +364,15 @@ class AdaptiveMarketSurvivalBacktester:
                 exit_reason = None
                 exit_price = 0.0
 
+                open_price = bar.get("open", curr_price)
                 if low_price <= sl_price:
                     exit_reason = "STOP_LOSS_HIT"
-                    exit_price = sl_price
+                    # Real-world gap down realism: If market opened below stop loss, fill at open price
+                    exit_price = min(open_price, sl_price)
                 elif high_price >= tp_price:
                     exit_reason = "TAKE_PROFIT_HIT"
-                    exit_price = tp_price
+                    # Real-world gap up realism: If market opened above take profit, fill at open price
+                    exit_price = max(open_price, tp_price)
                 else:
                     # Strategy specific exits
                     if self.strategy == "STRATEGY_A":
@@ -404,6 +409,12 @@ class AdaptiveMarketSurvivalBacktester:
                         if l_20 is not None and low_price <= l_20:
                             exit_reason = "DONCHIAN_20D_EXIT"
                             exit_price = min(curr_price, l_20)
+                        elif self.enable_technical_exit:
+                            # Early technical RSI exit: take profit on momentum overbought exhaustion (RSI >= 70)
+                            rsi_14 = bar.get("rsi_14")
+                            if rsi_14 is not None and rsi_14 >= 70.0:
+                                exit_reason = "RSI_OVERBOUGHT_EXIT"
+                                exit_price = curr_price
                     # Strategies D and E use strict stop losses which are handled above.
                 
                 pos["prev_time"] = current_time

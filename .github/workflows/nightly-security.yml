@@ -1,0 +1,41 @@
+name: Nightly Security & Integrity Audit
+
+on:
+  schedule:
+    # 02:00 UTC daily (07:30 IST)
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly-security-scan:
+    name: Nightly Security & Static Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install security tools and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-pinned.txt
+          pip install -e .
+
+      - name: Run Non-Negotiable Safety Audit
+        run: python3 scripts/verify_safety_invariants.py
+
+      - name: Run Bandit Static Security Scan
+        run: bandit -r apps services quant src -ll -ii -x .venv,tests
+
+      - name: Run Automated Disaster Recovery Restore Test
+        run: python3 scripts/backup_restore.py --test-restore
+
+      - name: Verify Dependency Lock
+        run: python3 scripts/verify_dependency_lock.py
+
+      - name: Execute Full Pytest Test Suite
+        run: pytest tests/ -q

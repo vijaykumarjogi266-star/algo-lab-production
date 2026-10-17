@@ -1,0 +1,21 @@
+# Algo Lab Codeowners & Audit Authority
+# Non-negotiable review required for safety, security, and risk engines
+
+* @vijaykumarjogi266-star
+
+# Core Safety & Invariants
+/src/version.py @vijaykumarjogi266-star
+/apps/api/core/config.py @vijaykumarjogi266-star
+/apps/api/core/security.py @vijaykumarjogi266-star
+
+# Execution Simulator & Risk Engine
+/services/risk-engine/ @vijaykumarjogi266-star
+/services/paper-engine/ @vijaykumarjogi266-star
+/services/backtest-engine/statutory_cost_model.py @vijaykumarjogi266-star
+/live_market_daemon.py @vijaykumarjogi266-star
+
+# CI/CD & Build Integrity
+/.github/ @vijaykumarjogi266-star
+/Makefile @vijaykumarjogi266-star
+/pyproject.toml @vijaykumarjogi266-star
+/requirements-pinned.txt @vijaykumarjogi266-star

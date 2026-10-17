@@ -96,10 +96,13 @@ class ZerodhaBrokerFeeCalculator:
         else:
             stamp_duty = 0.0
 
+        # DP charges (Zerodha Delivery Sell only): ₹13.50 + 18% GST = ₹15.93 flat per scrip sell
+        dp_charge = 15.93 if (product == ZerodhaProductType.CNC and side == OrderSide.SELL) else 0.0
+
         # GST: 18% on (brokerage + SEBI charges + transaction charges)
         gst = (brokerage + sebi_charges + txn_charges) * 0.18
 
-        total_charges = brokerage + stt + txn_charges + sebi_charges + stamp_duty + gst
+        total_charges = brokerage + stt + txn_charges + sebi_charges + stamp_duty + dp_charge + gst
 
         return {
             "turnover": round(turnover, 2),
@@ -108,6 +111,7 @@ class ZerodhaBrokerFeeCalculator:
             "transaction_charges": round(txn_charges, 2),
             "sebi_charges": round(sebi_charges, 4),
             "stamp_duty": round(stamp_duty, 2),
+            "dp_charge": round(dp_charge, 2),
             "gst": round(gst, 2),
             "total_charges": round(total_charges, 2),
         }
@@ -189,15 +193,15 @@ class ZerodhaBaseXAdapter(PaperExecutionProvider):
                 "message": "Connected to Zerodha Kite API (Read-Only Profile)",
             }
         except Exception as e:
-            logger.warning("Zerodha connection test fell back to paper mode: %s", e)
+            logger.error("Zerodha Kite API connection failed: %s", e)
             return {
-                "status": "CONNECTED",
+                "status": "DISCONNECTED",
                 "broker": "zerodha",
                 "adapter": "ZerodhaBaseX",
-                "connected": True,
-                "environment": "PAPER",
-                "warning": str(e),
-                "message": f"Zerodha Kite API offline or credentials unset; operating in Paper BaseX venue",
+                "connected": False,
+                "environment": self.config.environment.value,
+                "error": str(e),
+                "message": f"Zerodha Kite API authentication failed or token expired: {e}",
             }
 
     def get_margins(self) -> Dict[str, float]:

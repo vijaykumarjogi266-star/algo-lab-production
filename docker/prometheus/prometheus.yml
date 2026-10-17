@@ -1,0 +1,41 @@
+# Algo Lab Canonical Prometheus Server Configuration
+# Workstream D / Phase 5: Deployment Resilience & Operations
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    monitor: 'algolab-observability'
+    environment: 'production-paper'
+
+rule_files:
+  - "/etc/prometheus/alert_rules.yml"
+
+scrape_configs:
+  - job_name: "algolab-api"
+    metrics_path: "/metrics"
+    scheme: "http"
+    static_configs:
+      - targets: ["api:8000"]
+        labels:
+          tier: "platform"
+          service: "api"
+
+  - job_name: "algolab-liveness"
+    metrics_path: "/health"
+    scheme: "http"
+    static_configs:
+      - targets: ["api:8000"]
+        labels:
+          tier: "platform"
+          service: "api-health"
+
+  - job_name: "algolab-nginx"
+    metrics_path: "/metrics"
+    scheme: "http"
+    static_configs:
+      - targets: ["proxy:80"]
+        labels:
+          tier: "gateway"
+          service: "reverse-proxy"

@@ -74,4 +74,10 @@ logs/
 *.enc
 .master_key
 evidence/
+backups/
+*.tsbuildinfo
+audit/*.pdf
+audit/*.json
+data/cache/intraday_5m/
+
 

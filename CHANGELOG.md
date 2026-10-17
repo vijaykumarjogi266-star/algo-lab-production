@@ -1,5 +1,26 @@
 
-## [Unreleased]
+# Changelog
+All notable changes to Algo Lab will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.3.0] - 2026-10-14 — Institutional Hardening & Paper-Only Remediation
+### Added
+- **Single Source of Truth:** Created `src/version.py` tracking canonical version (`0.3.0`), lifecycle state (`forward-paper-validation`), and non-negotiable safety invariants.
+- **CI/CD Quality Gate:** Added canonical `Makefile` with `make release-check` enforcing typechecks, static security scan (Bandit), secret scans, dependency locks, and SBOM generation.
+- **API Security & RBAC:** Implemented granular roles (`viewer`, `researcher`, `operator`, `risk_admin`, `system_admin`), constant-time token comparison, key hashing at rest, and hardened Content Security Policy.
+- **Data Governance:** Implemented typed dataset manifest schema (`services/data_governance/manifest.py`) enforcing SHA256 checksums, exchange timestamp boundaries, and rejection of synthetic fallback data.
+- **Execution Simulator Contract:** Formalized execution simulator contract (`services/backtest-engine/execution_contract.py`) making all slippage, fees, and queueing assumptions explicit.
+- **Architectural Boundary Enforcement:** Added architecture firewall test (`tests/unit/test_architecture_boundaries.py`) proving strategies and AI modules cannot route real orders or bypass the independent risk engine.
+- **Backup & Restore Operations:** Added automated encrypted backup/restore tooling with integrity verification (`scripts/backup_restore.py`).
+- **Free AI Model Inference:** Integrated zero-key free AI inference with automatic fallback for CLI guidance and code review.
+
+### Changed
+- Aligned semantic version `0.3.0` across `pyproject.toml`, API responses, Docker configurations, and documentation.
+- Hardened `apps/api/core/config.py` and `live_market_daemon.py` with explicit fail-closed runtime checks on `LIVE_TRADING_ENABLED` and `REAL_BROKER_EXECUTION_ENABLED`.
+- Updated `services/backtest-engine/statutory_cost_model.py` and `live_market_daemon.py` for exact Indian delivery statutory tax attribution (STT, Stamp Duty, DP charges, GST).
+
+## [0.2.0] - 2026-10-12
 ### Added
 - Paper Engine: Implemented `ClockProtocol` with `SystemClock` and deterministic `FrozenClock` in `services/paper-engine/trailing_stop_engine.py` to eliminate wall-clock coupling in test suites.
 - Daemon Lifecycle: Wired mandatory 15:15 IST intraday auto-square-off directly into `LiveAlgoLabDaemon.step()` (`EOD_TRADE_EXECUTION` phase) to ensure no paper MIS positions leak past market close.

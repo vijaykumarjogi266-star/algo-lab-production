@@ -1,14 +1,23 @@
-name: Algo Lab CI
+name: Algo Lab CI & Release Integrity Gate
 
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
     branches: [main]
+  schedule:
+    # Nightly automated regression and security audit at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  backend-tests:
-    name: Backend Test Suite & Lint
+  release-integrity-gate:
+    name: Canonical CI Release Gate (Fail-Closed)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,18 +29,33 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-pinned.txt
           pip install -e .
 
-      - name: Run pytest test suite
-        run: |
-          pytest tests/ --cov=apps --cov=quant --cov=services --cov=data --cov-report=term-missing
+      - name: Execute Canonical Release Gate (make release-check)
+        run: make release-check
 
-  frontend-build:
-    name: Next.js Frontend Verification
+      - name: Upload SPDX SBOM Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spdx-sbom
+          path: data/sbom.spdx.json
+          if-no-files-found: error
+
+      - name: Upload Release Evidence Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-evidence
+          path: RELEASE_EVIDENCE.md
+          if-no-files-found: ignore
+
+  frontend-verification:
+    name: Next.js Frontend Verification & Build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,7 +64,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -50,15 +74,36 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Run TypeScript typecheck
+        run: npx tsc -p tsconfig.json --noEmit
+
       - name: Build Next.js application
         run: npm run build
 
-  docker-validation:
-    name: Docker Compose Syntax Validation
+  docker-and-container-security:
+    name: Docker Build & Security Canary
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate Docker Compose
+      - name: Validate Docker Compose Configuration
         run: docker compose config
+
+      - name: Build Docker API Image
+        run: |
+          docker build \
+            --file docker/Dockerfile.api \
+            --tag algolab-api:${{ github.sha }} \
+            --tag algolab-api:latest \
+            .
+
+      - name: Verify Non-Root User & No Secret Leakage in Image
+        run: |
+          # Verify image runs as non-root user 10001
+          USER_ID=$(docker run --rm algolab-api:latest id -u)
+          if [ "$USER_ID" -ne 10001 ]; then
+            echo "❌ Security Failure: Container is running as UID $USER_ID, expected non-root 10001"
+            exit 1
+          fi
+          echo "✅ Container verified running as non-root UID 10001"

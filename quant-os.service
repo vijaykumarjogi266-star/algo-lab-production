@@ -1,5 +1,5 @@
 [Unit]
-Description=QUANT-OS Stage 6 — Autonomous Lifecycle & Calendar Manager
+Description=Algo Lab Autonomous EOD Swing Trading Daemon (Zero Human Intervention)
 After=network.target network-online.target
 Wants=network-online.target
 
@@ -7,12 +7,13 @@ Wants=network-online.target
 Type=simple
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/home/ubuntu
+WorkingDirectory=/home/ubuntu/algolab
 Environment="PYTHONPATH=/home/ubuntu/algolab"
 Environment="ALLOW_LIVE_TRADING=False"
-ExecStart=/home/ubuntu/algolab/.venv/bin/python3 -m oms_project.trading_scheduler
-Restart=on-failure
-RestartSec=10s
+Environment="DAEMON_STRATEGY=STRATEGY_SUPER_ADAPTIVE"
+ExecStart=/home/ubuntu/algolab/.venv/bin/python3 /home/ubuntu/algolab/live_market_daemon.py --loop-daily
+Restart=always
+RestartSec=30s
 KillMode=mixed
 TimeoutStopSec=30s
 
