@@ -31,6 +31,8 @@ FIREWALL_TRAP_FILES = [
     "services/paper-engine/session.py",
     "services/paper-engine/adapters/base.py",
     "services/paper-engine/adapters/credentials.py",
+    "services/paper-engine/adapters/zerodha.py",
+    "services/broker_integration.py",
     "tests/unit/test_stage6_integrity.py",
     "tests/unit/test_stage27_security_firewall.py",
 ]
