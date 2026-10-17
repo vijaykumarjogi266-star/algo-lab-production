@@ -41,6 +41,7 @@ SLIPPAGE_GRID = [
     (0.0000, "0 bps (Pure Statutory Frictions)"),
     (0.0005, "5 bps (Baseline Liquid Execution)"),
     (0.0010, "10 bps (Elevated Slippage / Volatility)"),
+    (0.0015, "15 bps (Stress Friction Hurdle)"),
     (0.0020, "20 bps (High-Beta Liquidity Stress)"),
     (0.0050, "50 bps (Black Swan / Gap Risk Stress)"),
 ]
