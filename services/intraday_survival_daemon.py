@@ -29,6 +29,7 @@ import sys
 import time
 import math
 import json
+import uuid
 import sqlite3
 import logging
 from decimal import Decimal
@@ -213,8 +214,8 @@ class IntradaySurvivalEngine:
     with granular transaction logging and automated EOD review generation.
     """
 
-    def __init__(self):
-        self.db = IntradayDatabase()
+    def __init__(self, db: Optional[IntradayDatabase] = None):
+        self.db = db or IntradayDatabase()
         self.session_date = datetime.now(IST).strftime("%Y-%m-%d")
         self.session_id = f"INTRA_{self.session_date.replace('-', '')}_{os.getpid()}"
         self.base_capital = BASE_CAPITAL
@@ -230,6 +231,7 @@ class IntradaySurvivalEngine:
         self.openclaw_review_generated = False
         self.premarket_reconciliation_done = False
         self.postclose_reconciliation_done = False
+        self.joint_plan_prepared = False
 
         self.universe = [item["symbol"] for item in AUTHORITATIVE_NIFTY_50_CONSTITUENTS]
         self.sector_map = {item["symbol"]: item.get("sector", "GENERAL") for item in AUTHORITATIVE_NIFTY_50_CONSTITUENTS}
@@ -284,7 +286,7 @@ class IntradaySurvivalEngine:
         notes: str = "",
     ):
         """Institutional Audit Trail: Logs every single transaction and capital shift."""
-        tx_id = f"TX_{int(time.time()*1000)}_{symbol}"
+        tx_id = f"TX_{int(time.time()*1000)}_{symbol}_{uuid.uuid4().hex[:6]}"
         now_ist = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")
         now_utc = datetime.now(timezone.utc).isoformat()
         util_pct = ((self.buying_power - cash_after) / self.buying_power) * 100
@@ -613,7 +615,7 @@ class IntradaySurvivalEngine:
         if active_margin > self.peak_margin_deployed:
             self.peak_margin_deployed = active_margin
 
-        pos_id = f"POS_{sym}_{int(time.time())}"
+        pos_id = f"POS_{sym}_{int(time.time() * 1000)}_{uuid.uuid4().hex[:6]}"
         now_iso = datetime.now(timezone.utc).isoformat()
 
         self.positions[sym] = {
@@ -682,6 +684,24 @@ class IntradaySurvivalEngine:
                 (self.cash_buying_power, self.peak_margin_deployed, self.fees_paid, now_iso, self.session_id),
             )
 
+        # 3. Autonomous Telegram Live Trading Call Broadcast
+        try:
+            from services.observability.trading_calls import broadcast_trade_entry
+            broadcast_trade_entry(
+                symbol=sym,
+                action="BUY",
+                entry_price=price,
+                stop_loss=sl,
+                target_price=tp,
+                quantity=final_qty,
+                allocated_margin=allocated_buying_power,
+                strategy=f"{strat} (Institutional MIS)",
+                segment="INTRADAY (MIS)",
+                notes=f"Capital Deployed: ₹{allocated_buying_power:,.2f}",
+            )
+        except Exception as e:
+            logger.warning(f"Telegram live call entry broadcast error: {e}")
+
     def manage_open_positions(self):
         """Survival Guard 4: Trailing Stops & Breakeven Lock ratchet."""
         if not self.positions:
@@ -717,6 +737,19 @@ class IntradaySurvivalEngine:
                     cash_after=self.cash_buying_power,
                     notes=f"Gained +1.0R. Stop Loss ratcheted to ₹{pos['stop_loss']:.2f}",
                 )
+                try:
+                    from services.observability.trading_calls import broadcast_trailing_sl
+                    broadcast_trailing_sl(
+                        symbol=sym,
+                        entry_price=pos["entry_price"],
+                        old_sl=pos["initial_sl"],
+                        new_sl=pos["stop_loss"],
+                        target_price=pos["target_price"],
+                        current_price=curr_price,
+                        notes="Breakeven Locked (+1.0R Gained)",
+                    )
+                except Exception as e:
+                    logger.warning(f"Telegram trailing SL broadcast error: {e}")
 
             # Check Stop Loss hit
             if curr_price <= pos["stop_loss"]:
@@ -807,6 +840,26 @@ class IntradaySurvivalEngine:
             """,
                 (self.cash_buying_power, self.realized_pnl, self.fees_paid, now_iso, self.session_id),
             )
+
+        # 3. Autonomous Telegram Live Trading Call Exit Broadcast
+        try:
+            from services.observability.trading_calls import broadcast_trade_exit
+            broadcast_trade_exit(
+                symbol=sym,
+                action="SELL",
+                entry_price=entry_price,
+                exit_price=exit_price,
+                stop_loss=pos.get("stop_loss", 0.0),
+                target_price=pos.get("target_price", 0.0),
+                quantity=qty,
+                pnl=net_pnl,
+                return_pct=return_pct,
+                reason=reason,
+                segment="INTRADAY (MIS)",
+                friction=friction["total_friction"],
+            )
+        except Exception as e:
+            logger.warning(f"Telegram trade exit broadcast error: {e}")
 
     def liquidate_all_positions(self, reason: str = "15:15_MANDATORY_CUTOFF"):
         """Liquidates all open MIS positions to guarantee zero overnight exposure."""
@@ -946,6 +999,16 @@ class IntradaySurvivalEngine:
             if not self.premarket_reconciliation_done:
                 self.reconcile_broker_positions(phase="pre_market")
                 self.premarket_reconciliation_done = True
+
+            # 09:12 IST: Automated Hermes & OpenClaw Plan Preparation & Certification
+            if current_time >= datetime.strptime("09:12", "%H:%M").time() and not self.joint_plan_prepared:
+                try:
+                    from services.agents.hermes_openclaw_supervisor import HermesOpenClawSupervisor
+                    logger.info("🤖 [09:12 IST] Autonomous Pre-Market Plan: Invoking Hermes & OpenClaw...")
+                    HermesOpenClawSupervisor(db_path=self.db.db_path).prepare_plan()
+                    self.joint_plan_prepared = True
+                except Exception as e:
+                    logger.warning(f"Failed to auto-prepare Hermes/OpenClaw joint plan: {e}")
 
         # 15:15 IST: Auto-liquidation
         if current_time >= datetime.strptime("15:15", "%H:%M").time():
@@ -1121,7 +1184,8 @@ if __name__ == "__main__":
 
     engine = IntradaySurvivalEngine()
     if args.reconcile:
-        engine.reconcile_broker_positions(phase="manual_audit")
+        phase = "post_close" if datetime.now(IST).time() >= datetime.strptime("15:15", "%H:%M").time() else "manual_audit"
+        engine.reconcile_broker_positions(phase=phase)
         print("\n" + "="*80)
         print(" 🔍 BROKER RECONCILIATION AUDIT COMPLETE")
         print("    Status: Verified 100% Flat / Zero Zombie Positions")

@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "dec_20261017_975ebf4c",
+  "generated_at_utc": "2026-10-17T09:14:42.767217+00:00",
+  "decision_date": "2026-10-17T09:14:42.767217+00:00",
+  "target_session_date": "2026-10-18",
+  "market_regime": "TRENDING_BEAR",
+  "selected_strategy": "WAIT",
+  "parameters": {
+    "stop_loss_atr": 1.5,
+    "target_atr": 3.0,
+    "regime": "TRENDING_BEAR"
+  },
+  "risk_multiplier": 0.0,
+  "dataset_id": "NSE_DAILY_BENCHMARK_20261017",
+  "dataset_checksum": "7f80eb51959b7fcd7675910ce84c15920d10e7f7e6012bd363b846d642dfb2d5",
+  "code_version": "1.0.0",
+  "allocation_reason": "No candidate strategy met the strict robustness gate (DSR >= 0.50 and PF >= 1.10).",
+  "candidate_evaluations": [
+    {
+      "strategy": "STRAT_POOR",
+      "dsr": 0.1,
+      "profit_factor": 0.8,
+      "win_rate_pct": 30.0,
+      "max_drawdown_pct": 20.0,
+      "is_robust": false
+    }
+  ],
+  "stock_selection": {
+    "top_picks": [
+      "HDFCBANK.NS",
+      "ICICIBANK.NS"
+    ],
+    "approved_portfolio": [
+      "HDFCBANK.NS",
+      "ICICIBANK.NS",
+      "TCS.NS",
+      "RELIANCE.NS"
+    ],
+    "excluded_portfolio": [],
+    "narrative": "Screened 6 symbols. Approved 4 symbols for active session: HDFCBANK.NS, ICICIBANK.NS, TCS.NS, RELIANCE.NS. Excluded 0 symbols due to red flags or low conviction."
+  },
+  "eod_audit": {
+    "market_regime": "TRENDING_BEAR",
+    "ending_equity": 50000.0
+  }
+}
