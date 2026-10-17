@@ -8,7 +8,7 @@ import json
 import asyncio
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Header, WebSocket, WebSocketDisconnect, Security
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -913,6 +913,12 @@ WAR_ROOM_HTML = """
 </body>
 </html>
 """
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    """Redirect root path to interactive War Room visual dashboard."""
+    return RedirectResponse(url="/dashboard")
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def serve_war_room_dashboard():
